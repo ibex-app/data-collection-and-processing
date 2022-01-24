@@ -1,0 +1,12 @@
+{
+  "search_terms": [
+    {
+      "tags": ["twitter"],
+      "term": "van gogh"
+    },
+    {
+      "tags": ["twitter"],
+      "term": "(snow OR rain) has:media -is:retweet"
+    }
+  ]
+}

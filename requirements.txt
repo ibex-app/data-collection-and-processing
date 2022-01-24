@@ -1,0 +1,10 @@
+pymongo
+colorama
+searchtweets-v2==1.1.1
+pandas
+beanie
+pydantic
+motor
+celery
+redis
+requests
