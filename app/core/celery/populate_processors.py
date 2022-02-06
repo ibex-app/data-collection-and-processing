@@ -1,5 +1,9 @@
 from app.core.celery.tasks.process import process
 
+
+def get_processor_tasks():
+    pass
+
 # def add_downloaders(queue: Queue, **kwags):
 #     # items: list[itemType]
 #     items_to_download = StorageClass.get_items_to_download()

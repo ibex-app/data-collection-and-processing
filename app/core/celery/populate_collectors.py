@@ -60,7 +60,6 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
 
     return task_group
 
-
 async def to_collector_data_curated(collect_args: CollectTask, collect_action: CollectAction):
     collector_data_list = []
     data_sources = await DataSource.find_many(DataSource.platform == collect_action.platform).to_list()
