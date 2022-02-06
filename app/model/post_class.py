@@ -5,7 +5,7 @@ from uuid import UUID
 from beanie import Document, Indexed
 from pydantic import BaseModel
 
-from app.model.platform import Platform
+from app.model import Platform, MediaDownloadStatus
 
 
 class Labels(BaseModel):
@@ -42,6 +42,8 @@ class PostClass(Document):
     sentiment: Optional[float]
     has_video: Optional[bool]
     api_dump: dict
+    url:Optional[str]
+    media_download_status: Optional[MediaDownloadStatus]
 
     labels: Optional[Labels]
     scores: Optional[Scores]

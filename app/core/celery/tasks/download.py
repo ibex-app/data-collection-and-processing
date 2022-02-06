@@ -1,34 +1,37 @@
 from __future__ import annotations
-from multiprocessing.queues import Queue
-from storage import StorageClass
-from core import DownloaderDataType
-from downloaders import downloader_classes
+import asyncio
+
+from app.config.logging_config import log
+from app.util.model_utils import deserialize_from_base64
+
+from app.core.downloaders import downloader_classes
+from app.core.celery.worker import celery
+
+from app.model import PostClass, DownloadTask, MediaDownloadStatus
+
+@celery.task(name='app.core.celery.tasks.download.download')
+def download(task: str):
+
+    task: DownloadTask = deserialize_from_base64(task)
+    if task.platform not in downloader_classes.keys():
+        log.info(f"No implementation for platform [{task.platform}] found! skipping..")
+        return
+
+    downloader_class = downloader_classes[task.platform]()
+    downloader_method = downloader_class.download
 
 
-def add_downloaders(queue: Queue, **kwags):
-    # items: list[itemType]
-    items_to_download = StorageClass.get_items_to_download()
-    for item_to_download in items_to_download:
-        queue.put(DownloaderDataType(
-            executor='downloader',
-            platform=item_to_download["platform"],
-            platform_id=item_to_download["platform_id"],
-            # mediaType=item_to_download["mediaType"],
-            start_time=item_to_download["start_time"]\
-            if "start_time" in item_to_download.keys() else None,
-            end_time=item_to_download["end_time"]\
-            if "end_time" in item_to_download.keys() else None,
-            url=item_to_download["url"],
-            item_id=item_to_download["id"]
-        ))
+    asyncio.run(download_and_update_mongo(downloader_method, task))
+    
+async def download_and_update_mongo(downloader_method, task: DownloadTask):
 
+    from app.config.mongo_config import init_mongo
+    await init_mongo()
 
-def download(queue, **kwags):
-    downloader = downloader_classes[kwags["platform"]].download
-    # logging.info(kwags)
-    # return
-    status = downloader(kwags)
+    task.post = await PostClass.find(PostClass.id == task.post_id)
 
-    if status:
-        StorageClass.is_downloaded(kwags["item_id"])
+    download_status = downloader_method(task)
 
+    if download_status:
+        task.post.mdeia_download_status = MediaDownloadStatus.downloaded
+        await PostClass.update()

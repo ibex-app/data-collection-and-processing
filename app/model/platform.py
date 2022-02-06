@@ -7,3 +7,4 @@ class Platform(str, Enum):
     twitter = "twitter"
     geotv = "geotv"
     tiktok = "tiktok"
+    webpage = "webpage"
