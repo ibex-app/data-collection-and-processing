@@ -44,6 +44,7 @@ class PostClass(Document):
     api_dump: dict
     url:Optional[str]
     media_download_status: Optional[MediaDownloadStatus]
+    monitor_id: Optional[UUID]
 
     labels: Optional[Labels]
     scores: Optional[Scores]
