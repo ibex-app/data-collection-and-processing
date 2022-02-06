@@ -3,15 +3,33 @@ import logging
 import os
 from typing import List, Dict
 
-import requests
 import pandas as pd
-from datetime import datetime, timedelta
+from app.model import DownloadTask
+import logging
+import os
 
-from app.model import DataSource, SearchTerm, PostClass, Scores, Platform, DownloadTask
-from app.config.aop_config import slf, sleep_after
-from app.core.datasources.youtube.helper import SimpleUTC
+from pytube import YouTube
+
+video_dir = '/home/mik/Projects/mettamine/data-collection/vid/'
 
 
-class TwitterDownloader:
-    def download(self, task: DownloadTask):
-        pass
+class YoutubeDownloader:
+
+    def __init__(self):
+        self.token = os.getenv('YOUTUBE_TOKEN')
+
+    def download(task: DownloadTask):
+        try:
+            logging.info(task.url)
+            video = YouTube(task.url)
+            stream = video.streams.filter(progressive=True,
+                                          file_extension='mp4').order_by(
+                'resolution').desc().last()
+            stream.download(
+                filename=f'{video_dir}{task.item_id}.mp4')
+
+            return True
+
+        except:
+            print('err')
+            return False

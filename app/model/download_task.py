@@ -8,3 +8,4 @@ class DownloadTask(BaseModel):
     post_id: UUID
     post: Optional[PostClass]
     platform: Platform
+    url: str
