@@ -15,6 +15,7 @@ from app.core.dao.collect_actions_dao import get_collect_actions
 
 from app.model import CollectAction, CollectTask, DataSource, PostClass, SearchTerm
 
+from app.core.celery.tasks.collect import collect 
 
 async def get_collector_tasks() -> List[chain or group]:
     collect_actions: List[CollectAction] = await get_collect_actions()
