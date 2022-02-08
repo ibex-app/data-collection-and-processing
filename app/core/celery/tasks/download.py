@@ -9,7 +9,7 @@ from app.core.celery.worker import celery
 
 from app.model import PostClass, DownloadTask, MediaDownloadStatus
 
-@celery.task(name='app.core.celery.tasks.download.download')
+@celery.task(name='app.core.celery.tasks.download')
 def download(task: str):
 
     task: DownloadTask = deserialize_from_base64(task)

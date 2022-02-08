@@ -7,9 +7,9 @@ from app.util.model_utils import deserialize_from_base64
 from app.core.processors import processor_classes
 from app.core.celery.worker import celery
 
-from app.model import PostClass, ProcessTask, MediaDownloadStatus
+from app.model import PostClass, ProcessTask
 
-@celery.task(name='app.core.celery.tasks.process.process')
+@celery.task(name='app.core.celery.tasks.process')
 def process(task: str):
 
     task: ProcessTask = deserialize_from_base64(task)

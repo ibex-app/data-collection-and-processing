@@ -14,7 +14,7 @@ from app.core.datasources.youtube.helper import SimpleUTC
 
 
 
-from __future__ import annotations
+
 from datetime import datetime
 import logging
 import pandas as pd

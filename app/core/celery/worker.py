@@ -4,8 +4,8 @@ from app.config.constants import CeleryConstants as CC
 
 
 celery = Celery("ibex tasks",
-                broker=CC.BROKER_URL,
-                backend=CC.RESULT_BACKEND,
+                broker=CC.CLOUD_BROKER_URL,
+                backend=CC.LOCAL_RESULT_BACKEND_SQLLITE,
                 include=[
                     'app.core.celery.tasks.collect', 
                     'app.core.celery.tasks.download', 

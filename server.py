@@ -7,9 +7,9 @@ from app.core.celery.populate_collectors import get_collector_tasks
 from app.core.celery.populate_downloaders import get_downloader_tasks 
 from app.core.celery.populate_processors import get_processor_tasks
 
+from app.config.mongo_config import init_mongo
 
 async def run_collector_tasks():
-    from app.config.mongo_config import init_mongo
     await init_mongo()
 
     collector_tasks: List[xmap or group] = await get_collector_tasks()
@@ -32,4 +32,3 @@ if __name__ == "__main__":
     asyncio.run(run_collector_tasks())
     # asyncio.run(run_downloader_tasks())
     # asyncio.run(run_processor_tasks())
-

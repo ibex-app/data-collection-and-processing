@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict
 
-from app.model import model_classes
+# from app.model import model_classes
 
 
 import pickle

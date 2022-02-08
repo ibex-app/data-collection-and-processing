@@ -13,7 +13,7 @@ from pytube import YouTube
 video_dir = '/home/mik/Projects/mettamine/data-collection/vid/'
 
 
-class YoutubeDownloader:
+class TwitterDownloader:
 
     def __init__(self):
         self.token = os.getenv('YOUTUBE_TOKEN')

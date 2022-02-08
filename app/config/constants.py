@@ -1,10 +1,11 @@
 class CeleryConstants:
     _REDIS_PASS = "UVPFSTazUnDYKkYTNjxBnaUzx2An4WskETZg7cCYujzEjPNs8bNvxeNnVP9aQtMv"
-    BROKER_URL = "redis://localhost:6379"
-    RESULT_BACKEND = "redis://localhost:6379"
+    LOCAL_BROKER_URL_REDIS = "redis://localhost:6379"
+    LOCAL_RESULT_BACKEND_REDIS = "redis://localhost:6379"
+    CLOUD_BROKER_URL = 'amqps://sfausjzx:iGJg6KMgXGY3TU_RvhJnqJt_GEPAzLIs@roedeer.rmq.cloudamqp.com/sfausjzx'
+    LOCAL_RESULT_BACKEND_SQLLITE = 'db+sqlite:///db.sqlite3'
     TIMEOUT = 5     # in seconds
     EXPIRE = 120    # in seconds
-
 
 class UserAgents:
     AGENTS = [

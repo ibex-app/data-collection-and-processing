@@ -14,7 +14,7 @@ from app.core.dao.post_class_dao import remove_duplicates_from_db
 from app.model import CollectTask, PostClass
 
 
-@celery.task(name='app.core.celery.tasks.collect.collect')
+@celery.task(name='app.core.celery.tasks.collect')
 def collect(task: str):
     """
     Collects the data from passed platform.

@@ -5,7 +5,8 @@ from uuid import UUID
 from beanie import Document, Indexed
 from pydantic import BaseModel
 
-from app.model import Platform, MediaDownloadStatus
+from app.model.platform import Platform
+from app.model.media_download_status import MediaDownloadStatus
 
 
 class Labels(BaseModel):
