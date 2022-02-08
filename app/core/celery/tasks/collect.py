@@ -9,7 +9,7 @@ from app.util.model_utils import deserialize_from_base64
 from app.core.datasources import collector_classes
 from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
-from app.core.dao.post_class_dao import remove_duplicates_from_db
+from app.core.dao.post_dao import remove_duplicates_from_db
 
 from app.model import CollectTask, Post
 

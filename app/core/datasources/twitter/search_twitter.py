@@ -18,7 +18,7 @@ import json
 
 from app.model.datasource import DataSource
 from app.model.platform import Platform
-from app.model.post_class import Post, Scores
+from app.model.post import Post, Scores
 from app.model.search_term import SearchTerm
 
 
@@ -245,8 +245,8 @@ class TwitterCollector:
         for obj in df.iterrows():
             try:
                 o = obj[1]
-                post_class = TwitterCollector.map_to_post(o)
-                posts.append(post_class)
+                post = TwitterCollector.map_to_post(o)
+                posts.append(post)
             except ValueError as e:
                 self.log.error(f'[Twitter] {e}')
         return posts
@@ -281,4 +281,4 @@ class TwitterCollector:
 #     asyncio.run(test())
 #     # for obj in res.iterrows():
 #     #     o = obj[1]
-#     #     post_class = TwitterCollector.map_to_post(o)
+#     #     post = TwitterCollector.map_to_post(o)

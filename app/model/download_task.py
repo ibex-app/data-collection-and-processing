@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from app.model.platform import Platform
-from app.model.post_class import Post
+from app.model.post import Post
 from uuid import UUID
 from typing import Optional
 

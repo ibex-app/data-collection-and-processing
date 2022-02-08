@@ -3,14 +3,10 @@ import json
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from app.model.collect_action import CollectAction
-from app.model.search_term import SearchTerm
-from app.model.datasource import DataSource
+from app.model import DataSource, SearchTerm, CollectAction, Post
 
 import asyncio
-
-from app.model.post_class import Post
-
+import os
 
 class DBConstants:
     prefix = '../../'
@@ -20,8 +16,8 @@ class DBConstants:
     data_sources_path = f'{prefix}resources/data_sources.json'
     search_terms = 'search_terms'
     search_terms_path = f'{prefix}resources/search_terms.json'
-    # TODO Move to env
-    connection_string = "mongodb+srv://root:Dn9nB6czCKU6qFCj@cluster0.iejvr.mongodb.net/ibex?retryWrites=true&w=majority"    
+    # TODO: Move to env
+    connection_string = os.getenv('MONGO_CS')
     connection_string_local = "mongodb://127.0.0.1:27017/"    
 
 DB = DBConstants
@@ -31,9 +27,9 @@ async def init_mongo():
     """
     Initialize a connection to MongoDB
     """
-    client = AsyncIOMotorClient(DB.connection_string)
-    await init_beanie(database=client.ibex, document_models=[CollectAction])
     print(DB.connection_string)
+    client = AsyncIOMotorClient(DB.connection_string)
+    await init_beanie(database=client.ibex, document_models=[CollectAction, DataSource, SearchTerm, Post])
 
     # post_doc = Post(title='example', created_at=datetime.now(), platform_id='example',
     #                      author_platform_id='example', api_dump='example')

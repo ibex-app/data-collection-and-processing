@@ -204,8 +204,8 @@ class YoutubeCollector:
         for obj in df.iterrows():
             try:
                 o = obj[1]
-                post_class = self.map_to_post(o)
-                posts.append(post_class)
+                post = self.map_to_post(o)
+                posts.append(post)
             except ValueError as e:
                 self.log.error(f'[YouTube] {e}')
         return posts

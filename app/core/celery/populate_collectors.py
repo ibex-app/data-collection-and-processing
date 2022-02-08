@@ -13,7 +13,7 @@ from app.core.datasources import collector_classes
 from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
 
-from app.model import CollectAction, CollectTask, DataSource, Post, SearchTerm
+from app.model import CollectAction, CollectTask, DataSource, SearchTerm
 
 from app.core.celery.tasks.collect import collect 
 
@@ -62,7 +62,7 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
 
 async def to_collector_data_curated(collect_args: CollectTask, collect_action: CollectAction):
     collector_data_list = []
-    data_sources = await DataSource.find_many(DataSource.platform == collect_action.platform).to_list()
+    data_sources = await DataSource.find(DataSource.platform == collect_action.platform).to_list()
 
     if collect_action.use_batch:
         collect_args.data_sources = data_sources

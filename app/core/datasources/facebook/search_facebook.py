@@ -183,8 +183,8 @@ class FacebookCollector:
         res: List[Post] = []
         for post in posts:
             try:
-                post_class = self.map_to_post(post)
-                res.append(post_class)
+                post = self.map_to_post(post)
+                res.append(post)
             except ValueError as e:
                 self.log.error(f'[Facebook] {e}')
         return res
