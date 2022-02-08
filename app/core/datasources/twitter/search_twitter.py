@@ -18,7 +18,7 @@ import json
 
 from app.model.datasource import DataSource
 from app.model.platform import Platform
-from app.model.post_class import PostClass, Scores
+from app.model.post_class import Post, Scores
 from app.model.search_term import SearchTerm
 
 
@@ -218,7 +218,7 @@ class TwitterCollector:
         return df
 
     @staticmethod
-    def map_to_post(api_post: pd.Series) -> PostClass:
+    def map_to_post(api_post: pd.Series) -> Post:
         # create scores class
         likes = api_post['public_metrics_like_count'] if 'public_metrics_like_count' in api_post else None
         shares = api_post['public_metrics_retweet_count'] if 'public_metrics_retweet_count' in api_post else None
@@ -230,7 +230,7 @@ class TwitterCollector:
                         engagement=engagement)
 
         # create post class
-        post_doc = PostClass(title=api_post['source'],
+        post_doc = Post(title=api_post['source'],
                              text=api_post['text'],
                              created_at=api_post['created_at'],
                              platform=Platform.twitter,
@@ -240,7 +240,7 @@ class TwitterCollector:
                              api_dump=dict(**api_post))
         return post_doc
 
-    def _df_to_posts(self, df: pd.DataFrame) -> List[PostClass]:
+    def _df_to_posts(self, df: pd.DataFrame) -> List[Post]:
         posts = []
         for obj in df.iterrows():
             try:
@@ -252,7 +252,7 @@ class TwitterCollector:
         return posts
 
     def collect(self, queries: List[str],
-                start_date: datetime, end_date: datetime) -> List[PostClass]:
+                start_date: datetime, end_date: datetime) -> List[Post]:
         tweets = self._collect_tweets(queries, start_date, end_date)
         df = self._create_df(tweets)
         df = self._standardize(df)

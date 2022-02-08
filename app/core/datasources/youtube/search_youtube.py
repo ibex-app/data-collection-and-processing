@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-from app.model import DataSource, SearchTerm, PostClass, Scores, Platform
+from app.model import DataSource, SearchTerm, Post, Scores, Platform
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
 
@@ -174,7 +174,7 @@ class YoutubeCollector:
         return queries
 
     @staticmethod
-    def map_to_post(api_post: pd.Series) -> PostClass:
+    def map_to_post(api_post: pd.Series) -> Post:
         # create scores class
         scores = None
         if 'statistics' in api_post:
@@ -190,7 +190,7 @@ class YoutubeCollector:
 
         # create post class
         snip = api_post['snippet']
-        post_doc = PostClass(title=snip['title'],
+        post_doc = Post(title=snip['title'],
                              text=snip['description'] if 'description' in snip else '',
                              created_at=snip['publishedAt'],
                              platform=Platform.youtube,
@@ -199,7 +199,7 @@ class YoutubeCollector:
                              api_dump=dict(**api_post))
         return post_doc
 
-    def _df_to_posts(self, df: pd.DataFrame) -> List[PostClass]:
+    def _df_to_posts(self, df: pd.DataFrame) -> List[Post]:
         posts = []
         for obj in df.iterrows():
             try:

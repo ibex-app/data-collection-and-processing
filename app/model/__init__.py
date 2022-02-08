@@ -7,7 +7,7 @@ from app.model.datasource import DataSource
 from app.model.platform import Platform
 from app.model.processor import Processor
 from app.model.media_download_status import MediaDownloadStatus
-from app.model.post_class import PostClass, Scores, Transcript, Labels
+from app.model.post_class import Post, Scores, Transcript, Labels
 from app.model.search_term import SearchTerm
 
 
@@ -17,7 +17,7 @@ model_classes = [
     CollectTask,
     DataSource,
     Platform,
-    PostClass,
+    Post,
     Scores,
     Transcript,
     Labels,

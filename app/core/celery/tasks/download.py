@@ -7,7 +7,7 @@ from app.util.model_utils import deserialize_from_base64
 from app.core.downloaders import downloader_classes
 from app.core.celery.worker import celery
 
-from app.model import PostClass, DownloadTask, MediaDownloadStatus
+from app.model import Post, DownloadTask, MediaDownloadStatus
 
 @celery.task(name='app.core.celery.tasks.download')
 def download(task: str):
@@ -28,10 +28,10 @@ async def download_and_update_mongo(downloader_method, task: DownloadTask):
     from app.config.mongo_config import init_mongo
     await init_mongo()
 
-    task.post = await PostClass.find(PostClass.id == task.post_id)
+    task.post = await Post.find(Post.id == task.post_id)
 
     download_status = downloader_method(task)
 
     if download_status:
         task.post.mdeia_download_status = MediaDownloadStatus.downloaded
-        await PostClass.update()
+        await Post.update()

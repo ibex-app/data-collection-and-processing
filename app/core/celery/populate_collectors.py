@@ -13,7 +13,7 @@ from app.core.datasources import collector_classes
 from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
 
-from app.model import CollectAction, CollectTask, DataSource, PostClass, SearchTerm
+from app.model import CollectAction, CollectTask, DataSource, Post, SearchTerm
 
 from app.core.celery.tasks.collect import collect 
 

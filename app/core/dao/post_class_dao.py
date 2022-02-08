@@ -1,16 +1,16 @@
 from typing import List
 
-from app.model.post_class import PostClass
+from app.model.post_class import Post
 
 
-async def remove_duplicates_from_db(collected_items: List[PostClass]) -> List[PostClass]:
+async def remove_duplicates_from_db(collected_items: List[Post]) -> List[Post]:
     """
     An optimized method to
-    remove duplicates in a PostClass list with respect to items in MongoDB,
+    remove duplicates in a Post list with respect to items in MongoDB,
     according to (platform, platform_id) attributes.
 
     Steps:
-        1. Get all PostClass projections from db that match the given collected_items fields.
+        1. Get all Post projections from db that match the given collected_items fields.
         2. Filter collected_items by removing all elements present in list obtained above.
 
     :param collected_items:
@@ -20,7 +20,7 @@ async def remove_duplicates_from_db(collected_items: List[PostClass]) -> List[Po
     for citem in collected_items:
         platforms_and_platform_ids.add(citem.platform+citem.platform_id)
 
-    posts_in_db = await PostClass.find() \
+    posts_in_db = await Post.find() \
         .aggregate([
             {
                 "$project": {

@@ -31,7 +31,7 @@ class Transcript(BaseModel):
     text: str
 
 
-class PostClass(Document):
+class Post(Document):
     title: str
     text: str
     created_at: datetime

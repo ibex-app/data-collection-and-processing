@@ -66,7 +66,7 @@ def deserialize_from_base64(obj: str):
 
 # async def test():
 #     client = AsyncIOMotorClient('mongodb://127.0.0.1:27017/')
-#     await init_beanie(database=client.ibex, document_models=[CollectAction, SearchTerm, DataSource, PostClass])
+#     await init_beanie(database=client.ibex, document_models=[CollectAction, SearchTerm, DataSource, Post])
 #
 #     data_source = DataSource(
 #         title="title",

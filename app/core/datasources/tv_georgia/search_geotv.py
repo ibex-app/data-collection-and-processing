@@ -6,7 +6,7 @@ from typing import List, Dict
 import requests
 import pandas as pd
 
-from app.model import DataSource, SearchTerm, PostClass, Platform
+from app.model import DataSource, SearchTerm, Post, Platform
 from app.config.aop_config import sleep_after, slf
 
 
@@ -48,7 +48,7 @@ class TVGeorgiaCollector:
                               date_from: datetime,
                               date_to: datetime,
                               data_sources: List[DataSource]):
-        posts: List[PostClass] = []
+        posts: List[Post] = []
         for data_source in data_sources:
             res = self._collect_curated_single(data_source=data_source, date_from=date_from, date_to=date_to)
             posts.extend(res)
@@ -85,9 +85,9 @@ class TVGeorgiaCollector:
         return res.json()
 
     @staticmethod
-    def map_to_post(api_post: Dict) -> PostClass:
+    def map_to_post(api_post: Dict) -> Post:
         attr = api_post['attributes']
-        post_doc = PostClass(title=attr['name'] if 'name' in attr else "",
+        post_doc = Post(title=attr['name'] if 'name' in attr else "",
                              text="",
                              created_at=datetime.now(),
                              platform=Platform.geotv,
@@ -97,7 +97,7 @@ class TVGeorgiaCollector:
         return post_doc
 
     def _map_to_posts(self, posts: List[Dict]):
-        res: List[PostClass] = []
+        res: List[Post] = []
         for post in posts:
             try:
                 post_class = self.map_to_post(post)

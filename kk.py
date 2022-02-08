@@ -1,6 +1,6 @@
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
-from app.model.post_class import PostClass
+from app.model.post_class import Post
 import asyncio
 
 
@@ -13,7 +13,7 @@ async def init_mongo():
     Initialize a connection to MongoDB
     """
     client = AsyncIOMotorClient(connection_string)
-    await init_beanie(database=client.ibex, document_models=[PostClass])
+    await init_beanie(database=client.ibex, document_models=[Post])
 
 
 if __name__ == "__main__":

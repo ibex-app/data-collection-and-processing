@@ -9,7 +9,7 @@ from app.model.datasource import DataSource
 
 import asyncio
 
-from app.model.post_class import PostClass
+from app.model.post_class import Post
 
 
 class DBConstants:
@@ -35,11 +35,11 @@ async def init_mongo():
     await init_beanie(database=client.ibex, document_models=[CollectAction])
     print(DB.connection_string)
 
-    # post_doc = PostClass(title='example', created_at=datetime.now(), platform_id='example',
+    # post_doc = Post(title='example', created_at=datetime.now(), platform_id='example',
     #                      author_platform_id='example', api_dump='example')
     #
-    # await PostClass.find_one(PostClass.title == "example2").upsert(
-    #     Set({PostClass.title: 'asdasdasd'}),
+    # await Post.find_one(Post.title == "example2").upsert(
+    #     Set({Post.title: 'asdasdasd'}),
     #     on_insert=post_doc
     # )
 

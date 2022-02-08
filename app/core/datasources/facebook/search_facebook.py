@@ -7,7 +7,7 @@ import os
 
 from typing import List, Dict
 
-from app.model import DataSource, SearchTerm, PostClass, Scores, Platform
+from app.model import DataSource, SearchTerm, Post, Scores, Platform
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
 
@@ -143,7 +143,7 @@ class FacebookCollector:
     #     return pd.concat(dfs)
 
     @staticmethod
-    def map_to_post(api_post: Dict) -> PostClass:
+    def map_to_post(api_post: Dict) -> Post:
         # create scores class
         scores = None
         if 'statistics' in api_post and 'actual' in api_post['statistics']:
@@ -169,7 +169,7 @@ class FacebookCollector:
             title = api_post['title']
         elif 'message' in api_post:
             title = api_post['message']
-        post_doc = PostClass(title=api_post['message'] if 'message' in api_post else "",
+        post_doc = Post(title=api_post['message'] if 'message' in api_post else "",
                              text=api_post['description'] if 'description' in api_post else "",
                              created_at=api_post['date'] if 'date' in api_post else datetime.now(),
                              platform=Platform.facebook,
@@ -180,7 +180,7 @@ class FacebookCollector:
         return post_doc
 
     def _map_to_posts(self, posts: List[Dict]):
-        res: List[PostClass] = []
+        res: List[Post] = []
         for post in posts:
             try:
                 post_class = self.map_to_post(post)
@@ -189,7 +189,7 @@ class FacebookCollector:
                 self.log.error(f'[Facebook] {e}')
         return res
 
-    def collect(self, params) -> List[PostClass]:
+    def collect(self, params) -> List[Post]:
         results = self._collect_posts(params)
         posts = self._map_to_posts(results)
         return posts

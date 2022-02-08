@@ -11,7 +11,7 @@ from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
 from app.core.dao.post_class_dao import remove_duplicates_from_db
 
-from app.model import CollectTask, PostClass
+from app.model import CollectTask, Post
 
 
 @celery.task(name='app.core.celery.tasks.collect')
@@ -68,10 +68,10 @@ async def collect_and_save_items_in_mongo(collector_method, collector_args):
     await init_mongo()
 
     # execute collect action
-    collected_items: List[PostClass] = collector_method(**collector_args)
+    collected_items: List[Post] = collector_method(**collector_args)
 
     # remove duplicates
     collected_items = await remove_duplicates_from_db(collected_items)
 
     if len(collected_items):
-        await PostClass.insert_many(collected_items)
+        await Post.insert_many(collected_items)
