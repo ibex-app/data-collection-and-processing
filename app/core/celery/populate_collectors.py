@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, timedelta
+from pkgutil import get_data
 
 from typing import List
 
@@ -17,10 +18,25 @@ from app.model import CollectAction, CollectTask, DataSource, SearchTerm
 
 from app.core.celery.tasks.collect import collect 
 
+
 async def get_collector_tasks() -> List[chain or group]:
-    collect_actions: List[CollectAction] = await get_collect_actions()
+    collect_actions: List[CollectAction] = await get_collect_actions(['activated'])
     tasks_group: List[chain or group] = await to_tasks_group(collect_actions)
     return tasks_group
+
+
+async def get_data_sources(collect_action: CollectAction) -> List[DataSource]:
+    if collect_action.data_source_tag is not None and '*' not in collect_action.data_source_tag:
+        return await DataSource.find(DataSource.platform == collect_action.platform, In(DataSource.tags, collect_action.data_source_tag)).to_list()
+
+    return await DataSource.find(DataSource.platform == collect_action.platform).to_list()
+
+
+async def get_search_terms(collect_action: CollectAction) -> List[SearchTerm]:
+    if collect_action.search_terms_tags is not None and '*' not in collect_action.search_terms_tags:
+        return await DataSource.find(In(DataSource.tags, collect_action.search_terms_tags)).to_list()
+
+    return await DataSource.find().to_list()
 
 
 async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTask]:
@@ -37,14 +53,13 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
             platform=collect_action.platform,
             use_batch=collect_action.use_batch,
             curated=collect_action.curated,
-            date_from=(datetime.now() - timedelta(hours=18)),
+            date_from=(datetime.now() - timedelta(hours=12)),
             date_to=datetime.now(),
         )
 
         # is curated?
         if collect_action.curated:
-            collect_tasks += await to_collector_data_curated(
-                collect_task, collect_action)
+            collect_tasks += await to_collector_data_curated(collect_task, collect_action)
         else:
             collect_task.search_terms = await SearchTerm \
                 .find(In(SearchTerm.tags, collect_action.search_terms_tags)) \
@@ -60,9 +75,10 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
 
     return task_group
 
+
 async def to_collector_data_curated(collect_args: CollectTask, collect_action: CollectAction):
     collector_data_list = []
-    data_sources = await DataSource.find(DataSource.platform == collect_action.platform).to_list()
+    data_sources = await get_data_sources(collect_action)
 
     if collect_action.use_batch:
         collect_args.data_sources = data_sources

@@ -2,3 +2,5 @@
 db.sqlite3
 app/config/secrets.env
 server.sh
+query.ipynb
+local/**

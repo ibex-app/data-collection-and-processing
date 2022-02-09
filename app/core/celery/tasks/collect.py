@@ -21,11 +21,13 @@ def collect(task: str):
     :param task: base64 encoded CollectTask instance.
     :return:
     """
+
     task: CollectTask = deserialize_from_base64(task)
     if task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{task.platform}] found! skipping..")
         return
     collector_method, collector_args = get_collector_method_and_args(task)
+
     asyncio.run(collect_and_save_items_in_mongo(collector_method, collector_args))
 
 

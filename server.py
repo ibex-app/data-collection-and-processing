@@ -12,10 +12,10 @@ from app.config.mongo_config import init_mongo
 
 async def run_collector_tasks():
     await init_mongo()
-    return
     collector_tasks: List[xmap or group] = await get_collector_tasks()
-    g = group(collector_tasks[:1])
+    g = group(collector_tasks)
     g.delay().get()
+
 
 async def run_downloader_tasks():
     downloader_tasks: List[xmap or group] = await get_downloader_tasks()

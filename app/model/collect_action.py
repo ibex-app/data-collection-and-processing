@@ -34,7 +34,8 @@ class CollectAction(Document):
     search_terms_tags: List[str] = []
     data_source_tag: List[str] = []
     last_collection_date: Optional[datetime]
-
+    monitor_id: UUID
+    
     class Config:  
         use_enum_values = True
         validate_assignment = True

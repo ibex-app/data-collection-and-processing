@@ -45,7 +45,7 @@ class Post(Document):
     api_dump: dict
     url:Optional[str]
     media_download_status: Optional[MediaDownloadStatus]
-    monitor_id: Optional[UUID]
+    monitor_ids: List[UUID] = []
 
     labels: Optional[Labels]
     scores: Optional[Scores]

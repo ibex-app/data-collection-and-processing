@@ -16,17 +16,18 @@ from app.core.datasources.facebook.helper import split_to_chunks, needs_download
 class FacebookCollector:
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('CROWDTANGLE_TOKEN')
-        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 1
+        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 5
+        # TODO: double check the limit per post
         self.max_posts_per_call = kwargs['max_posts_per_call'] if 'max_posts_per_call' in kwargs else 10
 
     def collect_curated_batch(self,
                               date_from: datetime,
                               date_to: datetime,
                               data_sources: List[DataSource]):
-
-        logging.info('fb collection started - more data in logs...')
-        data_source_chunks: List[str] = FacebookCollector.split_data_sources(
-            data_sources)
+        
+        self.log.info('fb collection started - more data in logs...')
+        data_source_chunks: List[str] = FacebookCollector.split_data_sources(data_sources)
+        
         res = []
         for data_source_chunk in data_source_chunks:
             params = dict(
@@ -74,13 +75,11 @@ class FacebookCollector:
     @staticmethod
     @sleep_after(tag='Facebook')
     def _collect_posts_by_param(params):
-        res = requests.get(
-            "https://api.crowdtangle.com/posts", params=params).json()
+        res = requests.get("https://api.crowdtangle.com/posts", params=params).json()
         return res
 
     def _collect_posts(self, params) -> List[Dict]:
         results = []
-
         # TODO accounts length needs to be ckecked here
         res = {"result": {"pagination": {"nextPage": None}}}
         offset = 0
@@ -97,21 +96,21 @@ class FacebookCollector:
             results += res["result"]["posts"]
 
             if offset >= self.max_requests:
-                self.log.success(f'[Facebook] limit of {self.max_requests}'
-                                 f' requests has been reached for params: {params}.')
+                self.log.success(f'[Facebook] limit of {self.max_requests}')
+                                #  f' requests has been reached for params: {params}.')
                 break
 
         if not len(results):
             self.log.warn('No Facebook data collected')
             return results
 
+        self.log.success(f'[Facebook] {len(results)} posts collected')
+
         return results
 
     @staticmethod
-    def split_data_sources(data_sources: List[DataSource],
-                           chunk_size: int = 10):
-        platform_ids: List[str] = [data_source.platform_id
-                                   for data_source in data_sources]
+    def split_data_sources(data_sources: List[DataSource], chunk_size: int = 10):
+        platform_ids: List[str] = [data_source.platform_id for data_source in data_sources]
         return list(split_to_chunks(platform_ids, chunk_size))
 
     @staticmethod
