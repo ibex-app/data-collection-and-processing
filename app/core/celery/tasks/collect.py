@@ -26,9 +26,9 @@ def collect(task: str):
     if task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{task.platform}] found! skipping..")
         return
-    collector_method, collector_args = get_collector_method_and_args(task)
+    collector_method = get_collector_method_and_args(task)
 
-    asyncio.run(collect_and_save_items_in_mongo(collector_method, collector_args))
+    asyncio.run(collect_and_save_items_in_mongo(collector_method, task))
 
 
 def get_collector_method_and_args(task: CollectTask):
@@ -39,24 +39,17 @@ def get_collector_method_and_args(task: CollectTask):
     """
     collector = collector_classes[task.platform]()
 
-    collector_args = dict(
-        date_from=task.date_from,
-        date_to=task.date_to,
-    )
     if task.curated and task.use_batch:
         collector_method = collector.collect_curated_batch
-        collector_args["data_sources"] = task.data_sources
     elif task.curated and not task.use_batch:
         collector_method = collector.collect_curated_single
-        collector_args["data_source"] = task.data_source
     else:
         collector_method = collector.collect_firehose
-        collector_args["search_terms"] = task.search_terms
 
-    return collector_method, collector_args
+    return collector_method
 
 
-async def collect_and_save_items_in_mongo(collector_method, collector_args):
+async def collect_and_save_items_in_mongo(collector_method, task: CollectTask):
     """
     Initialize beanie & using the collector method:
         1. collect items
@@ -70,9 +63,10 @@ async def collect_and_save_items_in_mongo(collector_method, collector_args):
     await init_mongo()
 
     # execute collect action
-    collected_items: List[Post] = collector_method(**collector_args)
+    collected_items: List[Post] = collector_method(task)
 
     # remove duplicates
+    # TODO add monitor_id to post if in two or more results
     collected_items = await remove_duplicates_from_db(collected_items)
 
     if len(collected_items):

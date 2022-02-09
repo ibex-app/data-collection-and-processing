@@ -9,7 +9,7 @@ from app.model.processor import Processor
 from app.model.media_download_status import MediaDownloadStatus
 from app.model.post import Post, Scores, Transcript, Labels
 from app.model.tag import Tag
-
+from app.model.monitor import Monitor
 
 
 model_classes = [
@@ -26,5 +26,6 @@ model_classes = [
     ProcessTask,
     Processor,
     MediaDownloadStatus,
-    Tag
+    Tag,
+    Monitor
 ]

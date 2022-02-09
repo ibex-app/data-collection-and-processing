@@ -20,7 +20,7 @@ from app.core.celery.tasks.collect import collect
 
 
 async def get_collector_tasks() -> List[chain or group]:
-    collect_actions: List[CollectAction] = await get_collect_actions(['activated'])
+    collect_actions: List[CollectAction] = await get_collect_actions(['grass'])
     tasks_group: List[chain or group] = await to_tasks_group(collect_actions)
     return tasks_group
 
@@ -53,8 +53,9 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
             platform=collect_action.platform,
             use_batch=collect_action.use_batch,
             curated=collect_action.curated,
-            date_from=(datetime.now() - timedelta(hours=12)),
+            date_from=(datetime.now() - timedelta(hours=5)),
             date_to=datetime.now(),
+            monitor_id=collect_action.monitor_id
         )
 
         # is curated?
@@ -86,7 +87,7 @@ async def to_collector_data_curated(collect_args: CollectTask, collect_action: C
     else:
         for data_source in data_sources:
             collect_args_ = collect_args.copy()
-            collect_args_.data_source = data_source
+            collect_args_.data_sources = [data_source]
             collector_data_list.append(collect_args_)
 
     return collector_data_list

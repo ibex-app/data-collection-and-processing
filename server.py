@@ -3,9 +3,9 @@ from typing import List
 
 from celery import group, xmap
 
-from app.core.celery.populate_collectors import get_collector_tasks
-from app.core.celery.populate_downloaders import get_downloader_tasks 
-from app.core.celery.populate_processors import get_processor_tasks
+from app.core.populate_collectors import get_collector_tasks
+from app.core.populate_downloaders import get_downloader_tasks 
+from app.core.populate_processors import get_processor_tasks
 
 from app.config.mongo_config import init_mongo
 
