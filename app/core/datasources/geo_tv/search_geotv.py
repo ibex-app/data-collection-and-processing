@@ -6,7 +6,7 @@ from typing import List, Dict
 import requests
 import pandas as pd
 
-from app.model import DataSource, SearchTerm, Post, Platform
+from app.model import DataSource, SearchTerm, Post, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 
 
@@ -41,30 +41,20 @@ class TVGeorgiaCollector:
 
     def __init__(self, *args, **kwargs):
         pass
-        # self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 1
-        # self.max_posts_per_call = kwargs['max_posts_per_call'] if 'max_posts_per_call' in kwargs else 10
 
-    def collect_curated_batch(self,
-                              date_from: datetime,
-                              date_to: datetime,
-                              data_sources: List[DataSource]):
+    def collect(self, collect_task: CollectTask):
         posts: List[Post] = []
-        for data_source in data_sources:
-            res = self._collect_curated_single(data_source=data_source, date_from=date_from, date_to=date_to)
+        for data_source in collect_task.data_sources:
+            res = self._collect(data_source=data_source, date_from=collect_task.date_from, date_to=collect_task.date_to)
             posts.extend(res)
         return posts
 
-    def collect_curated_single(self,
-                               date_from: datetime,
-                               date_to: datetime,
-                               data_source: DataSource):
-        return self._collect_curated_single(data_source=data_source, date_from=date_from, date_to=date_to)
-
-    def collect_firehose(self,
-                         date_from: datetime,
-                         date_to: datetime,
-                         search_terms: List[SearchTerm]):
-        pass
+    def _collect(self, data_source: DataSource, date_from: datetime, date_to: datetime):
+        full_program = TVGeorgiaCollector._get_program(data_source.platform_id, date_from, date_to)
+        res = self._map_to_posts(full_program["data"])
+        for e in res:
+            e.data_source_id = data_source.id
+        return res
 
     @staticmethod
     @sleep_after(tag='TV Georgia')
@@ -106,13 +96,6 @@ class TVGeorgiaCollector:
                 self.log.error(f'[TV Georgia] {e}')
         return res
 
-    def _collect_curated_single(self, data_source: DataSource, date_from: datetime, date_to: datetime):
-        full_program = TVGeorgiaCollector._get_program(
-            data_source.platform_id, date_from, date_to)
-        res = self._map_to_posts(full_program["data"])
-        for e in res:
-            e.data_source_id = data_source.id
-        return res
 
 # async def test():
 #     from app.model.platform import Platform

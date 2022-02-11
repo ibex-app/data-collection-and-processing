@@ -4,3 +4,4 @@ app/config/secrets.env
 server.sh
 query.ipynb
 local/**
+local

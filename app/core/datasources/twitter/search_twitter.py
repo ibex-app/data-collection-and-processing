@@ -16,10 +16,7 @@ import pandas as pd
 from itertools import chain
 import json
 
-from app.model.datasource import DataSource
-from app.model.platform import Platform
-from app.model.post import Post, Scores
-from app.model.search_term import SearchTerm
+from app.model import DataSource, CollectTask, Platform, Post, Scores, SearchTerm
 
 
 class TweetFields(Enum):
@@ -76,20 +73,21 @@ class TwitterCollector:
     yaml_path = ".twitter_keys.yaml"
 
     def __init__(self, *args, **kwargs):
-        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 1
-        self.max_tweets_per_call = kwargs['max_tweets_per_call'] if 'max_tweets_per_call' in kwargs else 10
+        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 10
+        self.max_tweets_per_call = 100 # 500 for premium/academic account?
         self._set_fields(**kwargs)
         print(os.getcwd())
         print(self.yaml_path)
-        self.search_args = load_credentials(self.yaml_path,
-                                            yaml_key="search_tweets_v2",
-                                            env_overwrite=False)
+        # TODO use env vars instead of file
+        self.search_args = load_credentials(self.yaml_path, yaml_key="search_tweets_v2", env_overwrite=False)
+
 
     @staticmethod
     def _set_field(field, **kwargs):
         if field in kwargs:
             return ','.join([e.value for e in kwargs[field]])
         return None
+
 
     def _set_fields(self, *args, **kwargs):
         # TODO: remove these lines
@@ -101,81 +99,62 @@ class TwitterCollector:
         self.place_fields = self._set_field('place_fields', **kwargs)
         self.user_fields = self._set_field('user_fields', **kwargs)
 
-    def collect_curated_batch(self,
-                              date_from: datetime,
-                              date_to: datetime,
-                              data_sources: List[DataSource]):
-        queries = []
-        for ds in data_sources:
-            queries.append(f"from:{ds.platform_id}")
-        return self.collect(queries=queries, start_date=date_from, end_date=date_to)
 
-    def collect_curated_single(self,
-                               date_from: datetime,
-                               date_to: datetime,
-                               data_source: DataSource):
-        query = f"from:{data_source.platform_id}"
-        return self.collect(queries=[query], start_date=date_from, end_date=date_to)
+    def collect(self, collect_task: CollectTask) -> List[Post]:
+        params = gen_request_parameters(
+            query=collect_task.query,
+            granularity=False,
+            results_per_call=self.max_tweets_per_call,
+            start_time=collect_task.start_date.strftime("%Y-%m-%d %H:%M"),
+            end_time=collect_task.end_date.strftime("%Y-%m-%d %H:%M"),
+            tweet_fields=self.tweet_fields,
+            place_fields=self.place_fields,
+            user_fields=self.user_fields
+        )
+        
+        tweets = self._collect(params)
+        df = self._create_df(tweets)
+        df = self._standardize(df)
+        return self._df_to_posts(df)
 
-    def collect_firehose(self,
-                         date_from: datetime,
-                         date_to: datetime,
-                         search_terms: List[SearchTerm]):
-        queries = []
-        for search_term in search_terms:
-            queries.append(search_term.term)
-        return self.collect(queries=queries, start_date=date_from, end_date=date_to)
-
-    def get_query_results_tw(self, queries, startdate, enddate):
-        pass
 
     # @sleep_after(tag='Twitter')
     def _collect_tweets_by_rule(self, rule):
         return collect_results(rule, max_tweets=self.max_tweets_per_call, result_stream_args=self.search_args)
+
 
     @staticmethod
     def _upd_rule(tweets, rule):
         rule_json = json.loads(rule)
         rule_json['next_token'] = tweets[-1]["meta"]["next_token"]
         rule = json.dumps(rule_json)
-
         return rule
 
-    def _collect_tweets(self, queries: List[str], start_date: datetime, end_date: datetime):
+
+    def _collect(self, params):
         tweets = []
-        for query in queries:
-            rule = gen_request_parameters(
-                query=query,
-                granularity=False,
-                results_per_call=self.max_tweets_per_call,
-                start_time=start_date.strftime("%Y-%m-%d %H:%M"),
-                # end_time=end_date.strftime("%Y-%m-%d %H:%M"),
-                tweet_fields=self.tweet_fields,
-                place_fields=self.place_fields,
-                user_fields=self.user_fields
-            )
+        
+        count_requests = 0
+        while True:
+            twts = self._collect_tweets_by_rule(params)
+            tweets += twts
+            if len(twts) == 0 or len(tweets) == 0:
+                self.log.warn(f'[Twitter] something went wrong - api response is empty, breaking loop..')
+                break
 
-            count_requests = 0
-            while True:
-                twts = self._collect_tweets_by_rule(rule)
-                tweets += twts
-                if len(twts) == 0 or len(tweets) == 0:
-                    self.log.warn(f'[Twitter] something went wrong - api response is empty, breaking loop..')
-                    break
+            count_requests += 1
+            if count_requests >= self.max_requests:
+                self.log.success(f'[Twitter] limit of {self.max_requests} requests has been reached for query: {params}.')
+                break
 
-                count_requests += 1
-                if count_requests >= self.max_requests:
-                    self.log.success(f'[Twitter] limit of {self.max_requests}'
-                                     f' requests has been reached for query: {query}.')
-                    break
+            if "next_token" not in tweets[-1]["meta"]:
+                self.log.warn(f'[Twitter] next_token not present in api response, breaking loop..')
+                break
 
-                if "next_token" not in tweets[-1]["meta"]:
-                    self.log.warn(f'[Twitter] next_token not present in api response, breaking loop..')
-                    break
-
-                rule = self._upd_rule(tweets, rule)
+            rule = self._upd_rule(tweets, rule)
 
         return tweets
+
 
     @staticmethod
     def _create_df(tweets):
@@ -210,12 +189,14 @@ class TwitterCollector:
 
         return df
 
+
     @staticmethod
     def _standardize(df: pd.DataFrame):
         df["platform_id"] = df["id"]
         df = df.drop("id", 1)
 
         return df
+
 
     @staticmethod
     def map_to_post(api_post: pd.Series) -> Post:
@@ -240,6 +221,7 @@ class TwitterCollector:
                              api_dump=dict(**api_post))
         return post_doc
 
+
     def _df_to_posts(self, df: pd.DataFrame) -> List[Post]:
         posts = []
         for obj in df.iterrows():
@@ -251,12 +233,6 @@ class TwitterCollector:
                 self.log.error(f'[Twitter] {e}')
         return posts
 
-    def collect(self, queries: List[str],
-                start_date: datetime, end_date: datetime) -> List[Post]:
-        tweets = self._collect_tweets(queries, start_date, end_date)
-        df = self._create_df(tweets)
-        df = self._standardize(df)
-        return self._df_to_posts(df)
 
 
 # async def test():

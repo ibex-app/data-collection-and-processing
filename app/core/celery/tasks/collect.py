@@ -22,31 +22,13 @@ def collect(task: str):
     :return:
     """
 
-    task: CollectTask = deserialize_from_base64(task)
+    task: CollectTask = deserialize_from_base64(task.split('_[SEP]_')[1])
     if task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{task.platform}] found! skipping..")
         return
-    collector_method = get_collector_method_and_args(task)
-
-    asyncio.run(collect_and_save_items_in_mongo(collector_method, task))
-
-
-def get_collector_method_and_args(task: CollectTask):
-    """
-    Get the correct collector method & its corresponding args from CollectTask.
-    :param task:
-    :return:
-    """
-    collector = collector_classes[task.platform]()
-
-    if task.curated and task.use_batch:
-        collector_method = collector.collect_curated_batch
-    elif task.curated and not task.use_batch:
-        collector_method = collector.collect_curated_single
-    else:
-        collector_method = collector.collect_firehose
-
-    return collector_method
+    collector_class = collector_classes[task.platform]()
+    
+    asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, task))
 
 
 async def collect_and_save_items_in_mongo(collector_method, task: CollectTask):

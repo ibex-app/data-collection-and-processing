@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-from app.model import DataSource, SearchTerm, Post, Scores, Platform
+from app.model import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
 
@@ -20,49 +20,25 @@ class YoutubeCollector:
         self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 1
         self.max_results_per_call = kwargs['max_results_per_call'] if 'max_results_per_call' in kwargs else 10
 
-    def collect_curated_batch(self,
-                              date_from: datetime,
-                              date_to: datetime,
-                              data_sources: List[DataSource]):
-        for data_source in data_sources:
-            pass
+    def collect(self, collect_task: CollectTask):
+        if len(collect_task.data_sources) > 1:
+             self.log.error('[YouTube] Can not collect data from mode than one channel per call!')
 
-    def collect_curated_single(self,
-                               date_from: datetime,
-                               date_to: datetime,
-                               data_source: DataSource):
         params = dict(
-            channelId=data_source.platform_id,
+            q=collect_task.query,
             part='snippet',
             maxResults=self.max_results_per_call,
-            # publishedAfter=date_from.utcnow().replace(tzinfo=SimpleUTC()).isoformat(),
-            # publishedAfter=f'{date_from[:10]}T00:00:00Z',
-            # publishedBefore=date_to.utcnow().replace(tzinfo=SimpleUTC()).isoformat(),
-            # publishedBefore=f'{date_to[:10]}T00:00:00Z',
+            publishedAfter=f'{collect_task.date_from.isoformat()[:19]}Z',
+            publishedBefore=f'{collect_task.date_to.isoformat()[:19]}Z',
             key=self.token,
             order='viewCount',
         )
-        return self._collect_curated_single(params, data_source)
+        if len(collect_task.data_sources) == 1:
+            params['channelId'] = collect_task.data_sources[0].platform_id
 
-    def collect_firehose(self,
-                         date_from: datetime,
-                         date_to: datetime,
-                         search_terms: List[SearchTerm]):
-        queries = YoutubeCollector.split_to_queries(search_terms)
-        dfs = []
-        for query in queries:
-            params = dict(
-                q=query,
-                part='snippet',
-                maxResults=self.max_results_per_call,
-                publishedAfter=f'{date_from[:10]}T00:00:00Z',
-                publishedBefore=f'{date_to[:10]}T00:00:00Z',
-                key=self.token,
-                order='viewCount',
-            )
-            dfs.append(self.collect(params))
+        dfs = self._collect(params)
+        return self._df_to_posts(dfs)
 
-        return pd.concat(dfs)
 
     @staticmethod
     @sleep_after(tag='YouTube')
@@ -154,26 +130,6 @@ class YoutubeCollector:
         return df
 
     @staticmethod
-    def split_to_queries(search_terms: List[SearchTerm],
-                         max_query_length=400,
-                         additional_query_parameters=''):
-        queries = []
-        keywords = [search_term["term"] for search_term in search_terms]
-        query = keywords[0]
-
-        for keyword in keywords[1:]:
-            tmp_query = '{} OR "{}"'.format(query, keyword)
-            if len(tmp_query + additional_query_parameters) > max_query_length:
-                queries.append(f'{tmp_query}  {additional_query_parameters}')
-                query = f'"{keyword}"'
-                continue
-            query = tmp_query
-
-        queries.append(f'{tmp_query}  {additional_query_parameters}')
-
-        return queries
-
-    @staticmethod
     def map_to_post(api_post: pd.Series) -> Post:
         # create scores class
         scores = None
@@ -210,15 +166,6 @@ class YoutubeCollector:
                 self.log.error(f'[YouTube] {e}')
         return posts
 
-    def collect(self, params):
-        dfs = self._collect(params)
-        return self._df_to_posts(dfs)
-
-    def _collect_curated_single(self, params: Dict, data_source: DataSource):
-        res = self.collect(params)
-        for e in res:
-            e.data_source_id = data_source.id
-        return res
 
 
 # async def test():

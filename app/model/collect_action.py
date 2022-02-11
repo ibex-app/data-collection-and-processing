@@ -26,13 +26,13 @@ class CollectAction(Document):
     """
 
     id: UUID = Field(default_factory=uuid4, alias='_id')
-    curated: bool
+    # curated: bool
     platform: Platform
-    use_batch: bool
+    # use_batch: bool
     tags: List[str] = []
     parallel: bool
     search_terms_tags: List[str] = []
-    data_source_tag: List[str] = []
+    data_source_tags: List[str] = []
     last_collection_date: Optional[datetime]
     monitor_id: UUID
     

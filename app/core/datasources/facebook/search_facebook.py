@@ -1,6 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, timedelta
-import logging
+from datetime import datetime
 import requests
 import pandas as pd
 import os
@@ -17,53 +16,10 @@ from app.core.datasources.facebook.helper import split_to_chunks, needs_download
 class FacebookCollector:
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('CROWDTANGLE_TOKEN')
-        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 5
+        self.max_requests = 100
         # TODO: double check the limit per post
         self.max_posts_per_call = kwargs['max_posts_per_call'] if 'max_posts_per_call' in kwargs else 10
 
-
-    def collect_curated_batch(self, collect_task: CollectTask):
-        self.log.info('fb collection started - more data in logs...')
-        data_source_chunks: List[str] = FacebookCollector.split_data_sources(collect_task.data_sources)
-        
-        res = []
-        for data_source_chunk in data_source_chunks:
-            params = dict(
-                token=self.token,
-                startDate=collect_task.date_from.isoformat(),
-                endDate=collect_task.date_to.isoformat(),
-                count=self.max_posts_per_call,
-                accounts=','.join(data_source_chunk)
-            )
-            res.extend(self._collect_curated_batch(params, collect_task.data_sources))
-        return res
-
-
-    def collect_curated_single(self, collect_task: CollectTask):
-        params = dict(
-            token=self.token,
-            startDate=collect_task.date_from.isoformat(),
-            endDate=collect_task.date_to.isoformat(),
-            count=self.max_posts_per_call,
-            accounts=collect_task.data_source.platform_id
-        )
-        df = self._collect_curated_single(params, collect_task.data_sources[0])
-        return df
-
-    def collect_firehose(self, collect_task: CollectTask):
-        queries = FacebookCollector.split_to_queries(collect_task.search_terms)
-        res = []
-        for query in queries:
-            params = dict(
-                token=self.token,
-                startDate=collect_task.date_from.isoformat(),
-                endDate=collect_task.date_to.isoformat(),
-                count=self.max_posts_per_call,
-                searchTerm=query,
-            )
-            res.extend(self.collect(params))
-
-        return res
 
     @staticmethod
     @sleep_after(tag='Facebook')
@@ -71,7 +27,22 @@ class FacebookCollector:
         res = requests.get("https://api.crowdtangle.com/posts", params=params).json()
         return res
 
-    def _collect_posts(self, params) -> List[Dict]:
+
+    def collect(self, collect_task: CollectTask) -> List[Post]:
+        params = dict(
+            token=self.token,
+            startDate=collect_task.date_from.isoformat(),
+            endDate=collect_task.date_to.isoformat(),
+            count=self.max_posts_per_call,
+            searchTerm=collect_task.query,
+            accounts=','.join([data_source.platform_id for data_source in collect_task.data_sources])
+        )
+        results = self._collect(params)
+        posts = self._map_to_posts(results, params)
+        return posts
+
+
+    def _collect(self, params) -> List[Dict]:
         results = []
         # TODO accounts length needs to be ckecked here
         res = {"result": {"pagination": {"nextPage": None}}}
@@ -94,30 +65,12 @@ class FacebookCollector:
                 break
 
         if not len(results):
-            self.log.warn('No Facebook data collected')
+            self.log.warn('[Facebook] No data collected')
             return results
 
         self.log.success(f'[Facebook] {len(results)} posts collected')
 
         return results
-
-    @staticmethod
-    def split_data_sources(data_sources: List[DataSource], chunk_size: int = 10):
-        platform_ids: List[str] = [data_source.platform_id for data_source in data_sources]
-        return list(split_to_chunks(platform_ids, chunk_size))
-
-
-    @staticmethod
-    def split_to_queries(search_terms: List[SearchTerm], max_length=910):
-        queries = []
-        query = ''
-        for search_term in search_terms:
-            if len(query + search_term.term) > max_length:
-                queries.append(query.rstrip(','))
-                query = ''
-            query += f'"{search_term.term}",'
-        queries.append(query.rstrip(','))
-        return queries
 
 
     @staticmethod
@@ -158,6 +111,7 @@ class FacebookCollector:
                              monitor_id=monitor_id)
         return post_doc
 
+
     def _map_to_posts(self, posts: List[Dict], monitor_id: UUID):
         res: List[Post] = []
         for post in posts:
@@ -168,30 +122,8 @@ class FacebookCollector:
                 self.log.error(f'[Facebook] {e}')
         return res
 
-    def collect(self, params) -> List[Post]:
-        results = self._collect_posts(params)
-        posts = self._map_to_posts(results, params)
-        return posts
 
-    def _collect_curated_single(self, params: Dict, data_source: DataSource):
-        res = self.collect(params)
-        for e in res:
-            e.data_source_id = data_source.id
-        return res
 
-    def _collect_curated_batch(self, params: Dict, data_sources: List[DataSource]):
-        # collect posts
-        res = self.collect(params)
-
-        # set datasource ids
-        platform_id_to_ds_id = {}
-        for ds in data_sources:
-            platform_id_to_ds_id[ds.platform_id] = ds.id
-        for e in res:
-            if e.platform_id in platform_id_to_ds_id:
-                e.data_source_id = platform_id_to_ds_id[e.platform_id]
-
-        return res
 
 # async def test():
 #     from app.model.platform import Platform
@@ -211,20 +143,3 @@ class FacebookCollector:
 #     import asyncio
 #
 #     asyncio.run(test())
-
-
-# # TODO finalize this abbstraction
-# @staticmethod
-# def split_and_collect(arr: List[any],
-#                       self_: any,
-#                       date_from: datetime,
-#                       date_to: datetime,
-#                       max_length: int):
-#     chunks: List[str] = self_.split_to_queries(arr, max_length)
-#
-#     dfs = []
-#     for chunk in chunks:
-#         params = self_.build_params(chunk, date_from, date_to)
-#         dfs.append(self_.collect(params))
-#
-#     return pd.concat(dfs)

@@ -12,9 +12,8 @@ class CollectTask(BaseModel):
     # executor: str
     date_from: datetime
     date_to: datetime
-    use_batch: bool
-    curated: bool
     platform: Optional[Platform]
     data_sources: Optional[List[DataSource]]
     search_terms: Optional[List[SearchTerm]]
     monitor_id: UUID
+    query: Optional[str]

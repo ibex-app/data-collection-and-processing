@@ -31,5 +31,6 @@ async def run_processor_tasks():
 
 if __name__ == "__main__":
     asyncio.run(run_collector_tasks())
+    # update last collection date
     # asyncio.run(run_downloader_tasks())
     # asyncio.run(run_processor_tasks())
