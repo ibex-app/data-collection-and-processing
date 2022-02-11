@@ -55,21 +55,23 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
         possible collect all data sources at once,
         else run collection for each data source separately
     """
-    task_group: List[signature] = []
+    task_group = []
+    collect_tasks: List[CollectTask] = [] 
+
     for collect_action in collect_actions:
         
         data_source: List[DataSource] = await get_data_sources(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
 
-        collect_tasks: List[CollectTask] = split_to_tasks(data_source, search_terms, collect_action)
-
+        collect_tasks += split_to_tasks(data_source, search_terms, collect_action)
         collect_action.last_collection_date = datetime.now() - timedelta(hours=5)
         await collect_action.save()
     
 
     for platform in Platform:
         collect_tasks_group = [collect_task for collect_task in collect_tasks if collect_task.platform == platform]
-        
+        if len(collect_tasks_group) == 0: continue
+
         # should celery run this task in parallel?
         # for now all platform tasks are run in chain and different platform collections run in parallel
         if False:
