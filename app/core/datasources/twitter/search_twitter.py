@@ -69,15 +69,13 @@ class UserFields(Enum):
 
 @slf
 class TwitterCollector:
-    # yaml_path = "app/core/datasources/twitter/.twitter_keys.yaml"
-    yaml_path = ".twitter_keys.yaml"
+    yaml_path = "app/core/datasources/twitter/.twitter_keys.yaml"
+    # yaml_path = ".twitter_keys.yaml"
 
     def __init__(self, *args, **kwargs):
         self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 10
         self.max_tweets_per_call = 100 # 500 for premium/academic account?
         self._set_fields(**kwargs)
-        print(os.getcwd())
-        print(self.yaml_path)
         # TODO use env vars instead of file
         self.search_args = load_credentials(self.yaml_path, yaml_key="search_tweets_v2", env_overwrite=False)
 
@@ -99,23 +97,39 @@ class TwitterCollector:
         self.place_fields = self._set_field('place_fields', **kwargs)
         self.user_fields = self._set_field('user_fields', **kwargs)
 
+    def build_the_query(self, collect_task: CollectTask) -> str:
+        query = ''
+        if collect_task.query is not None and len(collect_task.query) > 0:
+            query = collect_task.query
+
+        if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
+            accounts_query = ' OR '.join([f'from:{data_source.platform_id}' for data_source in collect_task.data_sources])
+            query = f'({accounts_query}) ' + query
+        return query
 
     def collect(self, collect_task: CollectTask) -> List[Post]:
+
         params = gen_request_parameters(
-            query=collect_task.query,
+            query = self.build_the_query(collect_task),
             granularity=False,
             results_per_call=self.max_tweets_per_call,
-            start_time=collect_task.start_date.strftime("%Y-%m-%d %H:%M"),
-            end_time=collect_task.end_date.strftime("%Y-%m-%d %H:%M"),
+            start_time=collect_task.date_from.strftime("%Y-%m-%d %H:%M"),
+            end_time=collect_task.date_to.strftime("%Y-%m-%d %H:%M"),
             tweet_fields=self.tweet_fields,
             place_fields=self.place_fields,
             user_fields=self.user_fields
         )
         
         tweets = self._collect(params)
+        if len(tweets) == 0:
+            self.log.success(f'[Twitter] 0 posts collected')
+            return []     
+            
         df = self._create_df(tweets)
         df = self._standardize(df)
-        return self._df_to_posts(df)
+        posts = self._df_to_posts(df)
+        self.log.success(f'[Twitter] {len(posts)} posts collected')
+        return posts 
 
 
     # @sleep_after(tag='Twitter')
@@ -144,7 +158,7 @@ class TwitterCollector:
 
             count_requests += 1
             if count_requests >= self.max_requests:
-                self.log.success(f'[Twitter] limit of {self.max_requests} requests has been reached for query: {params}.')
+                self.log.success(f'[Twitter] limit of {self.max_requests} requests has been reached for query.')
                 break
 
             if "next_token" not in tweets[-1]["meta"]:
@@ -192,6 +206,7 @@ class TwitterCollector:
 
     @staticmethod
     def _standardize(df: pd.DataFrame):
+        
         df["platform_id"] = df["id"]
         df = df.drop("id", 1)
 

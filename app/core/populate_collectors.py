@@ -40,13 +40,13 @@ async def get_data_sources(collect_action: CollectAction) -> List[DataSource]:
 
 
 async def get_search_terms(collect_action: CollectAction) -> List[SearchTerm]:
-    if collect_action.search_terms_tags is None or len(collect_action.search_terms_tags) == 0:
+    if collect_action.search_term_tags is None or len(collect_action.search_term_tags) == 0:
         return []
 
-    if collect_action.search_terms_tags is not None and '*' not in collect_action.search_terms_tags:
-        return await DataSource.find(In(DataSource.tags, collect_action.search_terms_tags)).to_list()
+    if '*' not in collect_action.search_term_tags:
+        return await SearchTerm.find(In(SearchTerm.tags, collect_action.search_term_tags)).to_list()
     
-    return await DataSource.find().to_list()
+    return await SearchTerm.find().to_list()
 
 
 async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTask]:
@@ -60,10 +60,10 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
         
         data_source: List[DataSource] = await get_data_sources(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
-        
+
         collect_tasks: List[CollectTask] = split_to_tasks(data_source, search_terms, collect_action)
 
-        collect_action.last_collection_date = datetime.now()
+        collect_action.last_collection_date = datetime.now() - timedelta(hours=5)
         await collect_action.save()
     
 
@@ -82,19 +82,40 @@ async def to_tasks_group(collect_actions: List[CollectAction]) -> List[CollectTa
 
 
 def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm], collect_action: CollectAction) -> List[CollectTask]:
-    sub_queries = split_queries(search_terms, collect_action, data_sources)
+    sub_queries = split_queries(search_terms, collect_action, data_sources)[:5]
     sub_data_sources = split_sources(data_sources, collect_action)
-
+    
     collect_tasks:List[CollectTask] = []
-
-    for sub_data_source in sub_data_sources:
-        for sub_query in sub_queries:
+    
+    if len(sub_data_sources) > 0 and len(sub_queries) > 0:
+        for sub_data_source in sub_data_sources:
+            for sub_query in sub_queries:
+                collect_task: CollectTask = CollectTask(
+                    platform=collect_action.platform,
+                    date_from=get_last_collection_date(collect_action),
+                    date_to=datetime.now()  - timedelta(hours=5),
+                    monitor_id=collect_action.monitor_id,
+                    data_sources=sub_data_source,
+                    query=sub_query
+                )
+                collect_tasks.append(collect_task)
+    elif len(sub_data_sources) > 0:
+        for sub_data_source in sub_data_sources:
             collect_task: CollectTask = CollectTask(
                 platform=collect_action.platform,
                 date_from=get_last_collection_date(collect_action),
-                date_to=datetime.now(),
+                date_to=datetime.now()  - timedelta(hours=5),
                 monitor_id=collect_action.monitor_id,
-                data_sources=sub_data_source,
+                data_sources=sub_data_source
+            )
+            collect_tasks.append(collect_task)
+    elif len(sub_queries) > 0:
+         for sub_query in sub_queries:
+            collect_task: CollectTask = CollectTask(
+                platform=collect_action.platform,
+                date_from=get_last_collection_date(collect_action),
+                date_to=datetime.now()  - timedelta(hours=5),
+                monitor_id=collect_action.monitor_id,
                 query=sub_query
             )
             collect_tasks.append(collect_task)

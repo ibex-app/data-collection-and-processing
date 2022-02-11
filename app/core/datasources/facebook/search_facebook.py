@@ -34,9 +34,13 @@ class FacebookCollector:
             startDate=collect_task.date_from.isoformat(),
             endDate=collect_task.date_to.isoformat(),
             count=self.max_posts_per_call,
-            searchTerm=collect_task.query,
-            accounts=','.join([data_source.platform_id for data_source in collect_task.data_sources])
         )
+        
+        if collect_task.query is not None and len(collect_task.query) > 0:
+            params['searchTerm'] = collect_task.query
+        if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
+            params['accounts'] = ','.join([data_source.platform_id for data_source in collect_task.data_sources])
+
         results = self._collect(params)
         posts = self._map_to_posts(results, params)
         return posts

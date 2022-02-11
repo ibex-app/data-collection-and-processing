@@ -24,17 +24,17 @@ class CollectAction(Document):
     last_collection_date: Optional[datetime]
 
     """
+    # curated: bool
+    # use_batch: bool
+    # parallel: bool
 
     id: UUID = Field(default_factory=uuid4, alias='_id')
-    # curated: bool
-    platform: Platform
-    # use_batch: bool
-    tags: List[str] = []
-    parallel: bool
-    search_terms_tags: List[str] = []
-    data_source_tags: List[str] = []
-    last_collection_date: Optional[datetime]
     monitor_id: UUID
+    platform: Platform
+    tags: List[str] = []
+    search_term_tags: List[str]
+    data_source_tags: List[str]
+    last_collection_date: Optional[datetime]
     
     class Config:  
         use_enum_values = True

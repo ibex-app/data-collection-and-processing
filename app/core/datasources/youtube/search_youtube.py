@@ -17,27 +17,35 @@ class YoutubeCollector:
 
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('YOUTUBE_TOKEN')
-        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 1
-        self.max_results_per_call = kwargs['max_results_per_call'] if 'max_results_per_call' in kwargs else 10
+        self.max_requests = 10
+        self.max_results_per_call = kwargs['max_results_per_call'] if 'max_results_per_call' in kwargs else 50
 
     def collect(self, collect_task: CollectTask):
-        if len(collect_task.data_sources) > 1:
+        if collect_task.data_sources is not None and len(collect_task.data_sources) > 1:
              self.log.error('[YouTube] Can not collect data from mode than one channel per call!')
 
         params = dict(
-            q=collect_task.query,
             part='snippet',
             maxResults=self.max_results_per_call,
             publishedAfter=f'{collect_task.date_from.isoformat()[:19]}Z',
             publishedBefore=f'{collect_task.date_to.isoformat()[:19]}Z',
             key=self.token,
-            order='viewCount',
+            order='relevance',
+            type='video'
         )
-        if len(collect_task.data_sources) == 1:
+        
+        if collect_task.query is not None and len(collect_task.query) > 0:
+            params['q'] = collect_task.query
+        
+        if collect_task.data_sources is not None and len(collect_task.data_sources) == 1:
             params['channelId'] = collect_task.data_sources[0].platform_id
-
+        
         dfs = self._collect(params)
-        return self._df_to_posts(dfs)
+        posts = self._df_to_posts(dfs)
+
+        self.log.success(f'[YouTube] {len(posts)} posts collected')
+        
+        return posts 
 
 
     @staticmethod
@@ -62,7 +70,7 @@ class YoutubeCollector:
                     try:
                         ids.append(i["id"]["videoId"])
                     except Exception as ex:
-                        self.log.error(i, ex)
+                        self.log.error(f'[YouTube] {i} {str(ex)}')
 
             if "nextPageToken" not in res_dict:
                 self.log.warn(f'[YouTube] nextPageToken not present in api response, breaking loop..')
@@ -72,7 +80,7 @@ class YoutubeCollector:
 
         df = self._get_video_details(ids)
         if df.shape[0] == 0:
-            self.log.warn('No youtube data collected.')
+            self.log.warn('[YouTube] No data collected.')
             return df
 
         df["status"] = "media_needs_to_be_downloaded"
@@ -124,7 +132,7 @@ class YoutubeCollector:
                     try:
                         df.at[i, f'{col}_{key}'] = row[col][key]
                     except Exception as ex:
-                        logging.info(f"No more pages to collect {ex}")
+                        self.log.info(f"[YouTube] No more pages to collect {ex}")
 
         # logging.info(df.columns)
         return df
@@ -150,7 +158,7 @@ class YoutubeCollector:
                              text=snip['description'] if 'description' in snip else '',
                              created_at=snip['publishedAt'],
                              platform=Platform.youtube,
-                             platform_id=snip['channelId'],
+                             platform_id=api_post['id']['videoId'],
                              scores=scores,
                              api_dump=dict(**api_post))
         return post_doc

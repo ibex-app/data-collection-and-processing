@@ -2,6 +2,7 @@
 db.sqlite3
 app/config/secrets.env
 server.sh
-query.ipynb
+**.ipynb
 local/**
 local
+app/core/datasources/twitter/.twitter_keys.yaml
