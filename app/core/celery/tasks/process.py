@@ -7,7 +7,7 @@ from app.util.model_utils import deserialize_from_base64
 from app.core.processors import processor_classes
 from app.core.celery.worker import celery
 
-from app.model import Post, ProcessTask
+from ibex_models import Post, ProcessTask
 
 @celery.task(name='app.core.celery.tasks.process')
 def process(task: str):

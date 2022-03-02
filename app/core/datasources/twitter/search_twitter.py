@@ -16,7 +16,7 @@ import pandas as pd
 from itertools import chain
 import json
 
-from app.model import DataSource, CollectTask, Platform, Post, Scores, SearchTerm
+from ibex_models import DataSource, CollectTask, Platform, Post, Scores, SearchTerm
 
 
 class TweetFields(Enum):

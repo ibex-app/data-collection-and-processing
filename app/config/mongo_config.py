@@ -3,7 +3,7 @@ import json
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from app.model import DataSource, SearchTerm, CollectAction, Post, Tag
+from ibex_models import DataSource, SearchTerm, CollectAction, Post, Tag
 
 import asyncio
 import os

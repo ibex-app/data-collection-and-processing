@@ -1,12 +1,14 @@
 from enum import Enum
 from typing import Dict
 
-# from app.model import model_classes
+# from ibex_models import model_classes
 
 
 import pickle
 import base64
 
+from bson import json_util
+import json
 
 def serialize_to_base64(obj: object):
     """
@@ -16,7 +18,8 @@ def serialize_to_base64(obj: object):
     obj = pickle.dumps(obj)
     obj = base64.b64encode(obj)
     obj = obj.decode("ascii")
-    return obj
+    
+    return json_util.dumps(obj) + '_[SEP]_' + obj
 
 
 def deserialize_from_base64(obj: str):
@@ -24,7 +27,8 @@ def deserialize_from_base64(obj: str):
     :param obj: base64 encoded string.
     :return: object
     """
-    obj = base64.b64decode(obj)
+    
+    obj = base64.b64decode(obj.split('_[SEP]_')[1])
     obj = pickle.loads(obj)
     return obj
 

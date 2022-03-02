@@ -7,7 +7,7 @@ from uuid import UUID
 
 from typing import List, Dict
 
-from app.model import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
+from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
 
@@ -29,6 +29,9 @@ class FacebookCollector:
 
 
     def collect(self, collect_task: CollectTask) -> List[Post]:
+        self.max_posts_per_call = 100 if collect_task.sample else self.max_posts_per_call
+        self.max_requests = 1 if collect_task.sample else self.max_requests
+
         params = dict(
             token=self.token,
             startDate=collect_task.date_from.isoformat(),
@@ -41,9 +44,28 @@ class FacebookCollector:
         if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
             params['accounts'] = ','.join([data_source.platform_id for data_source in collect_task.data_sources])
 
-        results = self._collect(params)
+        results: List[any] = self._collect(params)
+
         posts = self._map_to_posts(results, params)
         return posts
+
+
+    def get_hit_counts(self, collect_task: CollectTask) -> int:
+        params = dict(
+            token=self.token,
+            startDate=collect_task.date_from.isoformat(),
+            endDate=collect_task.date_to.isoformat(),
+            count=self.max_posts_per_call,
+        )
+        
+        if collect_task.query is not None and len(collect_task.query) > 0:
+            params['searchTerm'] = collect_task.query
+        if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
+            params['accounts'] = ','.join([data_source.platform_id for data_source in collect_task.data_sources])
+
+        results: int = self._collect(params)
+
+        return results
 
 
     def _collect(self, params) -> List[Dict]:
@@ -130,7 +152,7 @@ class FacebookCollector:
 
 
 # async def test():
-#     from app.model.platform import Platform
+#     ibex_models.platform import Platform
 #     from app.config.mongo_config import init_mongo
 #     await init_mongo()
 #     date_from = datetime.now() - timedelta(days=5)
@@ -147,3 +169,7 @@ class FacebookCollector:
 #     import asyncio
 #
 #     asyncio.run(test())
+
+
+
+# os('python3 sample.py monitor_id=128376-81723618-087186238712 sample=True')

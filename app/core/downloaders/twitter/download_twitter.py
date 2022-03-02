@@ -4,7 +4,7 @@ import os
 from typing import List, Dict
 
 import pandas as pd
-from app.model import DownloadTask
+from ibex_models import DownloadTask
 import logging
 import os
 

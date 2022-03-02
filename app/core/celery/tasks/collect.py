@@ -11,7 +11,7 @@ from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
 from app.core.dao.post_dao import remove_duplicates_from_db
 
-from app.model import CollectTask, Post
+from ibex_models import CollectTask, Post
 
 
 @celery.task(name='app.core.celery.tasks.collect')
@@ -22,7 +22,7 @@ def collect(task: str):
     :return:
     """
 
-    task: CollectTask = deserialize_from_base64(task.split('_[SEP]_')[1])
+    task: CollectTask = deserialize_from_base64(task)
     if task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{task.platform}] found! skipping..")
         return

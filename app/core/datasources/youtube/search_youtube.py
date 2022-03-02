@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-from app.model import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
+from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
 
@@ -17,7 +17,7 @@ class YoutubeCollector:
 
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('YOUTUBE_TOKEN')
-        self.max_requests = 10
+        self.max_requests = 20
         self.max_results_per_call = kwargs['max_results_per_call'] if 'max_results_per_call' in kwargs else 50
 
     def collect(self, collect_task: CollectTask):
@@ -177,7 +177,7 @@ class YoutubeCollector:
 
 
 # async def test():
-#     from app.model.platform import Platform
+#     ibex_models.platform import Platform
 #     from app.config.mongo_config import init_mongo
 #     await init_mongo()
 #     date_from = datetime.now() - timedelta(days=5)

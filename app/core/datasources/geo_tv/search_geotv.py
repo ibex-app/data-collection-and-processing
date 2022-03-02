@@ -6,7 +6,7 @@ from typing import List, Dict
 import requests
 import pandas as pd
 
-from app.model import DataSource, SearchTerm, Post, Platform, CollectTask
+from ibex_models import DataSource, SearchTerm, Post, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 
 
@@ -98,7 +98,7 @@ class TVGeorgiaCollector:
 
 
 # async def test():
-#     from app.model.platform import Platform
+#     ibex_models.platform import Platform
 #     from app.config.mongo_config import init_mongo
 #     await init_mongo()
 #     date_from = datetime.now() - timedelta(days=5)

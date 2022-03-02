@@ -1,8 +1,13 @@
 from app.core.declensions import get_declensions
-from app.model import SearchTerm, Platform, CollectAction, DataSource
-from typing import List
+from ibex_models import SearchTerm, Platform, CollectAction, DataSource, CollectTask
+from datetime import datetime, timedelta
+from typing import List, Tuple
 import langid
 from app.core.datasources.facebook.helper import split_to_chunks
+from copy import deepcopy
+
+from faker import Faker
+fake = Faker()
 
 boolean_operators = dict()
 boolean_operators[Platform.facebook] = dict(
@@ -121,3 +126,62 @@ def split_sources(data_sources:List[DataSource], collect_action: CollectAction):
     chunk_sizes[Platform.twitter] = 3
 
     return list(split_to_chunks(data_sources, chunk_sizes[collect_action.platform]))
+
+
+
+def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime) -> List[CollectTask]:
+    sub_queries = split_queries(search_terms, collect_action, data_sources)[:5]
+    sub_data_sources = split_sources(data_sources, collect_action)
+    
+    collect_tasks:List[CollectTask] = []
+    
+    collect_task: CollectTask = CollectTask(
+        platform=collect_action.platform,
+        date_from=date_from,
+        date_to=date_to,
+        monitor_id=collect_action.monitor_id,
+    )
+    
+    if len(sub_data_sources) > 0 and len(sub_queries) > 0:
+        for sub_data_source in sub_data_sources:
+            for sub_query in sub_queries:
+                collect_task_ = deepcopy(collect_task)
+                collect_task_.data_sources = sub_data_source
+                collect_task_.query = sub_query
+                collect_tasks.append(collect_task_)
+    elif len(sub_data_sources) > 0:
+        for sub_data_source in sub_data_sources:
+            collect_task_ = deepcopy(collect_task)
+            collect_task_.data_sources = sub_data_source
+            collect_tasks.append(collect_task_)
+    elif len(sub_queries) > 0:
+         for sub_query in sub_queries:
+            collect_task_ = deepcopy(collect_task)
+            collect_task_.query = sub_query
+            collect_tasks.append(collect_task_)
+
+    return collect_tasks
+
+
+def get_last_collection_date(collect_action: CollectAction):
+    if collect_action.last_collection_date is None:
+        return datetime.now() - timedelta(days=1)
+    if collect_action.last_collection_date < datetime.now() - timedelta(days=5):
+        return datetime.now() - timedelta(days=5)
+    
+    return collect_action.last_collection_date 
+
+
+def get_time_intervals(collect_action: CollectAction, sample: bool=False) -> List[Tuple[datetime, datetime]]:
+    date_from = get_last_collection_date(collect_action)
+    date_to = datetime.now()  - timedelta(hours=5)
+
+    intervals = []
+    if sample:
+        for i in range(10):
+            rand_date = fake.date_between(start_date=date_from, end_date=date_to - timedelta(hours=5))
+            intervals.append((rand_date, rand_date + timedelta(hours=5)))
+    else:
+        intervals.append((date_from, date_to))
+
+    return intervals

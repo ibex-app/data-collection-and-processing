@@ -1,6 +1,6 @@
 from typing import List
 
-from app.model.post import Post
+from ibex_models import Post
 
 
 async def remove_duplicates_from_db(collected_items: List[Post]) -> List[Post]:

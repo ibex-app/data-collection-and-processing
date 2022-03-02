@@ -1,4 +1,4 @@
-from app.model.platform import Platform
+ibex_models.platform import Platform
 
 from app.core.downloaders.twitter.download_twitter import TwitterDownloader
 from app.core.downloaders.facebook.download_facebook import FacebookDownloader

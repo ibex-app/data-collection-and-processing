@@ -9,3 +9,7 @@ celery
 redis
 requests
 langid
+faker
+pytube
+bs4
+flower
