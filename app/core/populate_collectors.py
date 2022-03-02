@@ -7,14 +7,13 @@ from celery import chain, group
 from app.config.logging_config import log
 from app.util.model_utils import serialize_to_base64
 from app.core.dao.collect_actions_dao import get_collect_actions
-from from ibex_models import CollectAction, CollectTask, DataSource, SearchTerm, Platform
+from ibex_models import CollectAction, CollectTask, DataSource, SearchTerm, Platform
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
 
-async def get_collector_tasks(monitor_id: str = ['grass'], sample: bool = False) -> List[chain or group]:
+async def get_collector_tasks(monitor_id: str, sample: bool = False) -> List[chain or group]:
     collect_actions: List[CollectAction] = await get_collect_actions(monitor_id)
-
     tasks_group: List[chain or group] = await to_tasks_group(collect_actions, sample)
     return tasks_group
 

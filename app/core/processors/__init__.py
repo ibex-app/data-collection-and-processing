@@ -1,4 +1,4 @@
-ibex_models.processor import Processor
+from ibex_models import Processor
 
 from app.core.processors.tf_idf.tf_idf import TFIDFProcessor
 from app.core.processors.speech_to_text.speech_to_text import SpeechToTextProcessor

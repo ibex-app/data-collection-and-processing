@@ -1,4 +1,4 @@
-ibex_models.platform import Platform
+from ibex_models import Platform
 
 from app.core.datasources.twitter.search_twitter import TwitterCollector
 from app.core.datasources.facebook.search_facebook import FacebookCollector
