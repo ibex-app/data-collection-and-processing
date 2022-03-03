@@ -9,3 +9,4 @@ app/core/datasources/twitter/.twitter_keys.yaml
 nohup**
 ibex_models
 **.out
+/**.out
