@@ -154,13 +154,22 @@ class YoutubeCollector:
 
         # create post class
         snip = api_post['snippet']
-        post_doc = Post(title=snip['title'],
+        try:
+            post_doc = Post(title=snip['title'],
                              text=snip['description'] if 'description' in snip else '',
                              created_at=snip['publishedAt'],
                              platform=Platform.youtube,
                              platform_id=api_post['id']['videoId'],
                              scores=scores,
                              api_dump=dict(**api_post))
+        except:
+            post_doc = Post(title=snip['title'],
+                             text=snip['description'] if 'description' in snip else '',
+                             created_at=snip['publishedAt'],
+                             platform=Platform.youtube,
+                             platform_id='___',
+                             scores=scores,
+                             api_dump=dict(**api_post))   
         return post_doc
 
     def _df_to_posts(self, df: pd.DataFrame) -> List[Post]:
