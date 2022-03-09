@@ -10,23 +10,30 @@ from datetime import datetime, timedelta
 from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
-
+from app.core.datasources.utils import update_hits_count
 
 @slf
 class YoutubeCollector:
 
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('YOUTUBE_TOKEN')
+        self.max_posts_per_call = 50
         self.max_requests = 20
-        self.max_results_per_call = kwargs['max_results_per_call'] if 'max_results_per_call' in kwargs else 50
 
-    def collect(self, collect_task: CollectTask):
+        self.max_posts_per_call_sample = 50
+        self.max_requests_sample = 1
+
+
+    async def collect(self, collect_task: CollectTask):
+        self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
+        self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
+
         if collect_task.data_sources is not None and len(collect_task.data_sources) > 1:
              self.log.error('[YouTube] Can not collect data from mode than one channel per call!')
 
         params = dict(
             part='snippet',
-            maxResults=self.max_results_per_call,
+            maxResults=self.max_posts_per_call_,
             publishedAfter=f'{collect_task.date_from.isoformat()[:19]}Z',
             publishedBefore=f'{collect_task.date_to.isoformat()[:19]}Z',
             key=self.token,
@@ -45,7 +52,15 @@ class YoutubeCollector:
 
         self.log.success(f'[YouTube] {len(posts)} posts collected')
         
+        if collect_task.sample:
+            self.log.info(f'[YouTube] Getting hits count')
+            hits_count = self.get_hits_count(collect_task)
+            await update_hits_count(collect_task, hits_count)
+    
         return posts 
+
+    def get_hit_counts(self, collect_task: CollectTask) -> int:
+        return 100 
 
 
     @staticmethod
@@ -58,7 +73,7 @@ class YoutubeCollector:
 
     def _collect(self, params):
         ids = []
-        for i in range(self.max_requests):
+        for i in range(self.max_requests_):
             res = self._youtube_search(params)
 
             res_dict = res.json()
@@ -85,8 +100,7 @@ class YoutubeCollector:
 
         df["status"] = "media_needs_to_be_downloaded"
         df["platform_id"] = df["id"]
-        df["url"] = df.platform_id.apply(
-            lambda id: f'https://www.youtube.com/watch?v={id}')
+        df["url"] = df.platform_id.apply(lambda id: f'https://www.youtube.com/watch?v={id}')
 
         return df
 
@@ -154,6 +168,7 @@ class YoutubeCollector:
 
         # create post class
         snip = api_post['snippet']
+
         try:
             post_doc = Post(title=snip['title'],
                              text=snip['description'] if 'description' in snip else '',
@@ -161,6 +176,7 @@ class YoutubeCollector:
                              platform=Platform.youtube,
                              platform_id=api_post['id']['videoId'],
                              scores=scores,
+                            #  image_url = f"https://img.youtube.com/vi/{snip['id']}/0.jpg",
                              api_dump=dict(**api_post))
         except:
             post_doc = Post(title=snip['title'],

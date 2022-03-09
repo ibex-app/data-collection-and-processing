@@ -1,5 +1,5 @@
 from app.core.declensions import get_declensions
-from ibex_models import SearchTerm, Platform, CollectAction, DataSource, CollectTask
+from ibex_models import SearchTerm, Platform, CollectAction, DataSource, CollectTask, Monitor
 from datetime import datetime, timedelta
 from typing import List, Tuple
 import langid
@@ -129,7 +129,7 @@ def split_sources(data_sources:List[DataSource], collect_action: CollectAction):
 
 
 
-def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime) -> List[CollectTask]:
+def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
     sub_queries = split_queries(search_terms, collect_action, data_sources)[:5]
     sub_data_sources = split_sources(data_sources, collect_action)
     
@@ -140,6 +140,7 @@ def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm
         date_from=date_from,
         date_to=date_to,
         monitor_id=collect_action.monitor_id,
+        sample=sample
     )
     
     if len(sub_data_sources) > 0 and len(sub_queries) > 0:
@@ -172,9 +173,13 @@ def get_last_collection_date(collect_action: CollectAction):
     return collect_action.last_collection_date 
 
 
-def get_time_intervals(collect_action: CollectAction, sample: bool=False) -> List[Tuple[datetime, datetime]]:
-    date_from = get_last_collection_date(collect_action)
-    date_to = datetime.now()  - timedelta(hours=5)
+def get_time_intervals(collect_action: CollectAction, monitor: Monitor, sample: bool = False) -> List[Tuple[datetime, datetime]]:
+    if sample:
+        date_from = monitor.date_from
+        date_to = monitor.date_to
+    else:
+        date_from = get_last_collection_date(collect_action)
+        date_to = datetime.now()  - timedelta(hours=5)
 
     intervals = []
     if sample:

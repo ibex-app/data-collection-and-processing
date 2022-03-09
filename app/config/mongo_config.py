@@ -3,7 +3,7 @@ import json
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from ibex_models import DataSource, SearchTerm, CollectAction, Post, Tag
+from ibex_models import DataSource, SearchTerm, CollectAction, Post, Tag, CollectTask, Monitor
 
 import asyncio
 import os
@@ -29,7 +29,7 @@ async def init_mongo():
     Initialize a connection to MongoDB
     """
     client = AsyncIOMotorClient(DB.connection_string)
-    await init_beanie(database=client.ibex, document_models=[CollectAction, DataSource, SearchTerm, Post, Tag])
+    await init_beanie(database=client.ibex, document_models=[CollectAction, DataSource, SearchTerm, Post, Tag, CollectTask, Monitor])
 
     # post_doc = Post(title='example', created_at=datetime.now(), platform_id='example',
     #                      author_platform_id='example', api_dump='example')

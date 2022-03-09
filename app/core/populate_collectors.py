@@ -7,14 +7,20 @@ from celery import chain, group
 from app.config.logging_config import log
 from app.util.model_utils import serialize_to_base64
 from app.core.dao.collect_actions_dao import get_collect_actions
-from ibex_models import CollectAction, CollectTask, DataSource, SearchTerm, Platform
+from ibex_models import CollectAction, CollectTask, DataSource, SearchTerm, Platform, Monitor
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
+import uuid
 
 async def get_collector_tasks(monitor_id: str, sample: bool = False) -> List[chain or group]:
+    if sample:
+        await CollectTask.find(CollectTask.monitor_id == uuid.UUID(monitor_id)).delete()
+    
+    monitor = await Monitor.find_one(Monitor.id == uuid.UUID(monitor_id))
+
     collect_actions: List[CollectAction] = await get_collect_actions(monitor_id)
-    tasks_group: List[chain or group] = await to_tasks_group(collect_actions, sample)
+    tasks_group: List[chain or group] = await to_tasks_group(collect_actions, monitor, sample)
     return tasks_group
 
 
@@ -38,7 +44,7 @@ async def get_search_terms(collect_action: CollectAction) -> List[SearchTerm]:
     return await SearchTerm.find().to_list()
 
 
-async def to_tasks_group(collect_actions: List[CollectAction], sample:bool=False) -> List[CollectTask]:
+async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor, sample:bool=False) -> List[CollectTask]:
     """
         if the collection process is curated and batch collection is
         possible collect all data sources at once,
@@ -55,7 +61,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], sample:bool=False
         #Generating time intervals here, 
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
-        time_intervals = get_time_intervals(collect_action, sample)
+        time_intervals = get_time_intervals(collect_action, monitor, sample)
         
         # [2021-01-01    -  2021-03-01]
 
@@ -66,12 +72,16 @@ async def to_tasks_group(collect_actions: List[CollectAction], sample:bool=False
         # .. ]
 
         for (date_from, date_to) in time_intervals:
-            collect_tasks += split_to_tasks(data_source, search_terms, collect_action, date_from, date_to)
+            collect_tasks += split_to_tasks(data_source, search_terms, collect_action, date_from, date_to, sample)
         
         ## Update last collection time 
         collect_action.last_collection_date = time_intervals[-1][1]
         await collect_action.save()
+
+    if sample:
+        await CollectTask.insert_many(collect_tasks)
     
+    # Create separate task groups for platforms, that groups can be executed in parallel 
     for platform in Platform:
         collect_tasks_group = [collect_task for collect_task in collect_tasks if collect_task.platform == platform]
         if len(collect_tasks_group) == 0: continue

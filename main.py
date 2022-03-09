@@ -13,6 +13,7 @@ from app.config.mongo_config import init_mongo
 async def run_collector_tasks(monitor_id:str, sample:bool):
     await init_mongo()
     collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, sample)
+    print('collector_tasks here...')
     g = group(collector_tasks)
     g.delay().get()
 
@@ -43,7 +44,7 @@ if __name__ == '__main__':
 
     if not sample:
         pass
-        # asyncio.run(run_collector_tasks(monitor_id, sample))
-        # asyncio.run(run_collector_tasks(monitor_id, sample))
+        # asyncio.run(run_downloader_tasks(monitor_id, sample))
+        # asyncio.run(run_processor_tasks(monitor_id, sample))
         
     

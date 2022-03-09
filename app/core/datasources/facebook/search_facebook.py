@@ -10,16 +10,20 @@ from typing import List, Dict
 from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
-
+from app.core.datasources.utils import update_hits_count
 
 @slf
 class FacebookCollector:
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('CROWDTANGLE_TOKEN')
-        self.max_requests = 100
-        # TODO: double check the limit per post
-        self.max_posts_per_call = kwargs['max_posts_per_call'] if 'max_posts_per_call' in kwargs else 10
 
+        # TODO: double check the limit per post
+        self.max_posts_per_call = 100
+        self.max_requests = 20
+
+        self.max_posts_per_call_sample = 50
+        self.max_requests_sample = 1
+        
 
     @staticmethod
     @sleep_after(tag='Facebook')
@@ -28,15 +32,15 @@ class FacebookCollector:
         return res
 
 
-    def collect(self, collect_task: CollectTask) -> List[Post]:
-        self.max_posts_per_call = 100 if collect_task.sample else self.max_posts_per_call
-        self.max_requests = 1 if collect_task.sample else self.max_requests
+    async def collect(self, collect_task: CollectTask) -> List[Post]:
+        self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
+        self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
         params = dict(
             token=self.token,
             startDate=collect_task.date_from.isoformat(),
             endDate=collect_task.date_to.isoformat(),
-            count=self.max_posts_per_call,
+            count=self.max_posts_per_call_
         )
         
         if collect_task.query is not None and len(collect_task.query) > 0:
@@ -47,35 +51,30 @@ class FacebookCollector:
         results: List[any] = self._collect(params)
 
         posts = self._map_to_posts(results, params)
+
+        if collect_task.sample:
+            self.log.info(f'[Facebook] Getting hits count')
+            hits_count = self.get_hits_count(params)
+            await update_hits_count(collect_task, hits_count)
+
         return posts
 
 
-    def get_hit_counts(self, collect_task: CollectTask) -> int:
-        params = dict(
-            token=self.token,
-            startDate=collect_task.date_from.isoformat(),
-            endDate=collect_task.date_to.isoformat(),
-            count=self.max_posts_per_call,
-        )
+    def get_hit_counts(self, params: dict) -> int:
+        params['count'] = 0
         
-        if collect_task.query is not None and len(collect_task.query) > 0:
-            params['searchTerm'] = collect_task.query
-        if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
-            params['accounts'] = ','.join([data_source.platform_id for data_source in collect_task.data_sources])
+        res = requests.get("https://api.crowdtangle.com/search_posts", params=params).json()
 
-        results: int = self._collect(params)
-
-        return results
+        return res
 
 
     def _collect(self, params) -> List[Dict]:
         results = []
-        # TODO accounts length needs to be ckecked here
         res = {"result": {"pagination": {"nextPage": None}}}
         offset = 0
-        # print(data_sources)
+
         while 'nextPage' in res["result"]["pagination"]:
-            params["offset"] = self.max_posts_per_call * offset
+            params["offset"] = self.max_posts_per_call_ * offset
             offset += 1
             res = self._collect_posts_by_param(params)
 
@@ -85,7 +84,7 @@ class FacebookCollector:
 
             results += res["result"]["posts"]
 
-            if offset >= self.max_requests:
+            if offset >= self.max_requests_:
                 self.log.success(f'[Facebook] limit of {self.max_requests}')
                                 #  f' requests has been reached for params: {params}.')
                 break
@@ -126,6 +125,9 @@ class FacebookCollector:
             title = api_post['title']
         elif 'message' in api_post:
             title = api_post['message']
+
+        url = api_post['postUrl'] if 'postUrl' in api_post.keys() else None
+            
         post_doc = Post(title=api_post['message'] if 'message' in api_post else "",
                              text=api_post['description'] if 'description' in api_post else "",
                              created_at=api_post['date'] if 'date' in api_post else datetime.now(),
@@ -134,7 +136,9 @@ class FacebookCollector:
                              author_platform_id=api_post['account']['id'] if 'account' in api_post else None,
                              scores=scores,
                              api_dump=api_post,
-                             monitor_id=monitor_id)
+                             monitor_id=monitor_id,
+                             url=url
+                             )
         return post_doc
 
 

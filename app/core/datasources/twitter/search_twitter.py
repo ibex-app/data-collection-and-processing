@@ -11,6 +11,7 @@ from searchtweets import (
     gen_request_parameters,
     load_credentials
 )
+from app.core.datasources.utils import update_hits_count
 import pandas as pd
 # import os
 from itertools import chain
@@ -73,8 +74,12 @@ class TwitterCollector:
     # yaml_path = ".twitter_keys.yaml"
 
     def __init__(self, *args, **kwargs):
-        self.max_requests = kwargs['max_requests'] if 'max_requests' in kwargs else 10
-        self.max_tweets_per_call = 100 # 500 for premium/academic account?
+        self.max_posts_per_call = 100 # 500 for premium/academic account?
+        self.max_requests = 20
+
+        self.max_posts_per_call_sample = 50
+        self.max_requests_sample = 1
+
         self._set_fields(**kwargs)
         # TODO use env vars instead of file
         self.search_args = load_credentials(self.yaml_path, yaml_key="search_tweets_v2", env_overwrite=False)
@@ -107,12 +112,14 @@ class TwitterCollector:
             query = f'({accounts_query}) ' + query
         return query
 
-    def collect(self, collect_task: CollectTask) -> List[Post]:
+    async def collect(self, collect_task: CollectTask) -> List[Post]:
+        self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
+        self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
         params = gen_request_parameters(
             query = self.build_the_query(collect_task),
             granularity=False,
-            results_per_call=self.max_tweets_per_call,
+            results_per_call=self.max_posts_per_call_,
             start_time=collect_task.date_from.strftime("%Y-%m-%d %H:%M"),
             end_time=collect_task.date_to.strftime("%Y-%m-%d %H:%M"),
             tweet_fields=self.tweet_fields,
@@ -129,8 +136,16 @@ class TwitterCollector:
         df = self._standardize(df)
         posts = self._df_to_posts(df)
         self.log.success(f'[Twitter] {len(posts)} posts collected')
+        
+        if collect_task.sample:
+            self.log.info(f'[Twitter] Getting hits count')
+            hits_count = self.get_hits_count(collect_task)
+            await update_hits_count(collect_task, hits_count)
+
         return posts 
 
+    def get_hit_counts(self, collect_task: CollectTask) -> int:
+        return 100
 
     # @sleep_after(tag='Twitter')
     def _collect_tweets_by_rule(self, rule):
@@ -157,7 +172,7 @@ class TwitterCollector:
                 break
 
             count_requests += 1
-            if count_requests >= self.max_requests:
+            if count_requests >= self.max_requests_:
                 self.log.success(f'[Twitter] limit of {self.max_requests} requests has been reached for query.')
                 break
 
@@ -220,11 +235,12 @@ class TwitterCollector:
         shares = api_post['public_metrics_retweet_count'] if 'public_metrics_retweet_count' in api_post else None
         reply_count = api_post['public_metrics_reply_count'] if 'public_metrics_reply_count' in api_post else 0
         quote_count = api_post['public_metrics_quote_count'] if 'public_metrics_quote_count' in api_post else 0
+        
         engagement = reply_count + quote_count
         scores = Scores(likes=likes,
                         shares=shares,
                         engagement=engagement)
-
+        
         # create post class
         post_doc = Post(title=api_post['source'],
                              text=api_post['text'],
@@ -233,6 +249,7 @@ class TwitterCollector:
                              platform_id=api_post['platform_id'],
                              author_platform_id=api_post['author_id'] if 'author_id' in api_post else None,
                              scores=scores,
+                             url = f"https://twitter.com/{api_post['author_id']}/status/{api_post['platform_id']}",
                              api_dump=dict(**api_post))
         return post_doc
 

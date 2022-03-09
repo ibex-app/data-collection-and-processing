@@ -15,23 +15,23 @@ from ibex_models import CollectTask, Post
 
 
 @celery.task(name='app.core.celery.tasks.collect')
-def collect(task: str):
+def collect(collect_task: str):
     """
     Collects the data from passed platform.
     :param task: base64 encoded CollectTask instance.
     :return:
     """
 
-    task: CollectTask = deserialize_from_base64(task)
-    if task.platform not in collector_classes.keys():
-        log.info(f"No implementation for platform [{task.platform}] found! skipping..")
+    collect_task: CollectTask = deserialize_from_base64(collect_task)
+    if collect_task.platform not in collector_classes.keys():
+        log.info(f"No implementation for platform [{collect_task.platform}] found! skipping..")
         return
-    collector_class = collector_classes[task.platform]()
+    collector_class = collector_classes[collect_task.platform]()
     
-    asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, task))
+    asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, collect_task))
 
 
-async def collect_and_save_items_in_mongo(collector_method, task: CollectTask):
+async def collect_and_save_items_in_mongo(collector_method, collect_task: CollectTask):
     """
     Initialize beanie & using the collector method:
         1. collect items
@@ -45,7 +45,7 @@ async def collect_and_save_items_in_mongo(collector_method, task: CollectTask):
     await init_mongo()
 
     # execute collect action
-    collected_items: List[Post] = collector_method(task)
+    collected_items: List[Post] = await collector_method(collect_task)
 
     # remove duplicates
     # TODO add monitor_id to post if in two or more results
@@ -53,3 +53,5 @@ async def collect_and_save_items_in_mongo(collector_method, task: CollectTask):
 
     if len(collected_items):
         await Post.insert_many(collected_items)
+
+    
