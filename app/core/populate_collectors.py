@@ -11,13 +11,13 @@ from ibex_models import CollectAction, CollectTask, DataSource, SearchTerm, Plat
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
-import uuid
+from uuid import UUID
 
-async def get_collector_tasks(monitor_id: str, sample: bool = False) -> List[chain or group]:
+async def get_collector_tasks(monitor_id:UUID, sample: bool = False) -> List[chain or group]:
     if sample:
-        await CollectTask.find(CollectTask.monitor_id == uuid.UUID(monitor_id)).delete()
+        await CollectTask.find(CollectTask.monitor_id == monitor_id).delete()
     
-    monitor = await Monitor.find_one(Monitor.id == uuid.UUID(monitor_id))
+    monitor = await Monitor.find_one(Monitor.id == monitor_id)
 
     collect_actions: List[CollectAction] = await get_collect_actions(monitor_id)
     tasks_group: List[chain or group] = await to_tasks_group(collect_actions, monitor, sample)

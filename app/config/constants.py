@@ -49,3 +49,5 @@ number_to_month = {
     '11': 'Nov',
     '12': 'Dec',
 }
+
+media_directory = '/home/media/'

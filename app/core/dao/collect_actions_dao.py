@@ -1,11 +1,11 @@
 from typing import Optional, List
 
 from beanie.odm.operators.find.comparison import In
-import uuid
+from uuid import UUID
 from ibex_models import CollectAction
 
-async def get_collect_actions(monitor_id: str):
-    return await CollectAction.find(CollectAction.monitor_id == uuid.UUID(monitor_id)).to_list()
+async def get_collect_actions(monitor_id: UUID):
+    return await CollectAction.find(CollectAction.monitor_id == monitor_id).to_list()
 
 
 async def get_collect_actions_by_tag(tags: Optional[List[str]] = None):

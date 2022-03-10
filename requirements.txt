@@ -14,3 +14,4 @@ pytube
 bs4
 flower
 faker==2.8.2
+pytube

@@ -2,6 +2,7 @@ import asyncio
 from typing import List
 import argparse
 from celery import group, xmap
+from uuid import UUID
 
 from app.core.populate_collectors import get_collector_tasks
 from app.core.populate_downloaders import get_downloader_tasks 
@@ -10,7 +11,7 @@ from app.core.populate_processors import get_processor_tasks
 from app.config.mongo_config import init_mongo
 
 
-async def run_collector_tasks(monitor_id:str, sample:bool):
+async def run_collector_tasks(monitor_id:UUID, sample:bool):
     await init_mongo()
     collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, sample)
     print('Collector tasks here...')
@@ -18,14 +19,14 @@ async def run_collector_tasks(monitor_id:str, sample:bool):
     g.delay().get()
 
 
-async def run_downloader_tasks():
-    downloader_tasks: List[xmap or group] = await get_downloader_tasks()
+async def run_downloader_tasks(monitor_id:UUID):
+    downloader_tasks: List[xmap or group] = await get_downloader_tasks(monitor_id)
     g = group(downloader_tasks)
     g.delay().get()
 
 
-async def run_processor_tasks():
-    processor_tasks: List[xmap or group] = await get_processor_tasks()
+async def run_processor_tasks(monitor_id:UUID):
+    processor_tasks: List[xmap or group] = await get_processor_tasks(monitor_id)
     g = group(processor_tasks)
     g.delay().get()
 
@@ -37,14 +38,13 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    monitor_id = getattr(args, 'monitor_id')
+    monitor_id = UUID(getattr(args, 'monitor_id'))
     sample = getattr(args, 'sample')
     
     asyncio.run(run_collector_tasks(monitor_id, sample))
 
     if not sample:
-        pass
-        # asyncio.run(run_downloader_tasks(monitor_id, sample))
+        asyncio.run(run_downloader_tasks(monitor_id))
         # asyncio.run(run_processor_tasks(monitor_id, sample))
         
     
