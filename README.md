@@ -8,6 +8,12 @@ You must also have a MongoDB instance running as the application's write layer.
 
 ## Usage
 
+0. Clone repository for models
+
+```
+git clone https://github.com/ibex-app/ibex_models
+```
+
 1. Run celery:
 ```
 celery -A app.core.celery.worker worker -l info
