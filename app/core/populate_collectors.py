@@ -58,11 +58,17 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         data_source: List[DataSource] = await get_data_sources(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
 
+        # Generateing hits count task here
+        if sample:
+            hits_count_tasks = split_to_tasks(data_source, search_terms, collect_action, monitor.date_from, monitor.date_to, sample)
+            for hits_count_task in hits_count_tasks:
+                hits_count_task.get_hits_count = True
+            collect_tasks += hits_count_tasks 
+
         #Generating time intervals here, 
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
         time_intervals = get_time_intervals(collect_action, monitor, sample)
-        
         # [2021-01-01    -  2021-03-01]
 
         # [2021-01-07    -  2021-01-07,
@@ -73,12 +79,13 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
         for (date_from, date_to) in time_intervals:
             collect_tasks += split_to_tasks(data_source, search_terms, collect_action, date_from, date_to, sample)
-        
-        ## Update last collection time 
-        collect_action.last_collection_date = time_intervals[-1][1]
-        await collect_action.save()
 
-    if sample:
+        if not sample: 
+            ## Update last collection time 
+            collect_action.last_collection_date = time_intervals[-1][1]
+            await collect_action.save()
+
+    if sample and len(collect_tasks):
         await CollectTask.insert_many(collect_tasks)
     
     # Create separate task groups for platforms, that groups can be executed in parallel 

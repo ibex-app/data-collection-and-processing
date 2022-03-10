@@ -83,7 +83,7 @@ class TwitterCollector:
         self._set_fields(**kwargs)
         # TODO use env vars instead of file
         self.search_args = load_credentials(self.yaml_path, yaml_key="search_tweets_v2", env_overwrite=False)
-
+        self.count_args = load_credentials(self.yaml_path, yaml_key="count_tweets_v2", env_overwrite=False)
 
     @staticmethod
     def _set_field(field, **kwargs):
@@ -137,19 +137,30 @@ class TwitterCollector:
         posts = self._df_to_posts(df)
         self.log.success(f'[Twitter] {len(posts)} posts collected')
         
-        if collect_task.sample:
-            self.log.info(f'[Twitter] Getting hits count')
-            hits_count = self.get_hits_count(collect_task)
-            await update_hits_count(collect_task, hits_count)
-
         return posts 
 
-    def get_hit_counts(self, collect_task: CollectTask) -> int:
-        return 100
+    async def get_hits_count(self, collect_task: CollectTask) -> int:
+        params = gen_request_parameters(
+            query = self.build_the_query(collect_task),
+            granularity='hour',
+            start_time=collect_task.date_from.strftime("%Y-%m-%d %H:%M"),
+            end_time=collect_task.date_to.strftime("%Y-%m-%d %H:%M")
+        )
+
+        res = collect_results(params, result_stream_args=self.count_args)
+
+        hits_count = 0
+        for res_ in res:
+            for count in res_['data']:
+                hits_count += count['tweet_count']
+        self.log.info(f'[Twitter] Hits count - {hits_count}')
+
+        return hits_count
+
 
     # @sleep_after(tag='Twitter')
     def _collect_tweets_by_rule(self, rule):
-        return collect_results(rule, max_tweets=self.max_tweets_per_call, result_stream_args=self.search_args)
+        return collect_results(rule, max_tweets=self.max_posts_per_call_, result_stream_args=self.search_args)
 
 
     @staticmethod
@@ -173,7 +184,7 @@ class TwitterCollector:
 
             count_requests += 1
             if count_requests >= self.max_requests_:
-                self.log.success(f'[Twitter] limit of {self.max_requests} requests has been reached for query.')
+                self.log.success(f'[Twitter] limit of {self.max_requests_} requests has been reached for query.')
                 break
 
             if "next_token" not in tweets[-1]["meta"]:
@@ -242,8 +253,8 @@ class TwitterCollector:
                         engagement=engagement)
         
         # create post class
-        post_doc = Post(title=api_post['source'],
-                             text=api_post['text'],
+        post_doc = Post(title=api_post['text'],
+                             text=api_post['source'],
                              created_at=api_post['created_at'],
                              platform=Platform.twitter,
                              platform_id=api_post['platform_id'],

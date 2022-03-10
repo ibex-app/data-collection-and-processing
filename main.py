@@ -13,7 +13,7 @@ from app.config.mongo_config import init_mongo
 async def run_collector_tasks(monitor_id:str, sample:bool):
     await init_mongo()
     collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, sample)
-    print('collector_tasks here...')
+    print('Collector tasks here...')
     g = group(collector_tasks)
     g.delay().get()
 

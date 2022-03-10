@@ -31,8 +31,7 @@ class FacebookCollector:
         res = requests.get("https://api.crowdtangle.com/posts", params=params).json()
         return res
 
-
-    async def collect(self, collect_task: CollectTask) -> List[Post]:
+    def generate_request_params(self, collect_task: CollectTask):
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
@@ -48,24 +47,16 @@ class FacebookCollector:
         if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
             params['accounts'] = ','.join([data_source.platform_id for data_source in collect_task.data_sources])
 
-        results: List[any] = self._collect(params)
+        return params
 
+
+    async def collect(self, collect_task: CollectTask) -> List[Post]:
+        params  = self.generate_request_params(collect_task)
+
+        results: List[any] = self._collect(params)
         posts = self._map_to_posts(results, params)
 
-        if collect_task.sample:
-            self.log.info(f'[Facebook] Getting hits count')
-            hits_count = self.get_hits_count(params)
-            await update_hits_count(collect_task, hits_count)
-
         return posts
-
-
-    def get_hit_counts(self, params: dict) -> int:
-        params['count'] = 0
-        
-        res = requests.get("https://api.crowdtangle.com/search_posts", params=params).json()
-
-        return res
 
 
     def _collect(self, params) -> List[Dict]:
@@ -97,6 +88,16 @@ class FacebookCollector:
 
         return results
 
+    
+    async def get_hits_count(self, collect_task: CollectTask) -> int:
+        params  = self.generate_request_params(collect_task)
+        params['count'] = 0
+        
+        hits_count = requests.get("https://api.crowdtangle.com/posts/search", params=params).content
+
+        self.log.info(f'[Facebook] Hits count - {hits_count}')
+
+        return hits_count
 
     @staticmethod
     def map_to_post(api_post: Dict, monitor_id: UUID) -> Post:

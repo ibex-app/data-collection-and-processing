@@ -6,6 +6,19 @@ import langid
 from app.core.datasources.facebook.helper import split_to_chunks
 from copy import deepcopy
 
+from random import randrange
+from datetime import timedelta
+
+def random_date_between(start, end):
+    """
+    This function will return a random datetime between two datetime 
+    objects.
+    """
+    delta = end - start
+    int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
+    random_second = randrange(int_delta)
+    return start + timedelta(seconds=random_second)
+    
 from faker import Faker
 fake = Faker()
 
@@ -132,7 +145,8 @@ def split_sources(data_sources:List[DataSource], collect_action: CollectAction):
 def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
     sub_queries = split_queries(search_terms, collect_action, data_sources)[:5]
     sub_data_sources = split_sources(data_sources, collect_action)
-    
+    # print(data_sources, search_terms, collect_action, date_from, date_to, sample)
+    # return []
     collect_tasks:List[CollectTask] = []
     
     collect_task: CollectTask = CollectTask(
@@ -184,7 +198,7 @@ def get_time_intervals(collect_action: CollectAction, monitor: Monitor, sample: 
     intervals = []
     if sample:
         for i in range(10):
-            rand_date = fake.date_between(start_date=date_from, end_date=date_to - timedelta(hours=5))
+            rand_date = random_date_between(date_from, date_to - timedelta(hours=5))
             intervals.append((rand_date, rand_date + timedelta(hours=5)))
     else:
         intervals.append((date_from, date_to))

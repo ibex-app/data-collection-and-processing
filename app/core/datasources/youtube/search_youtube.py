@@ -23,8 +23,7 @@ class YoutubeCollector:
         self.max_posts_per_call_sample = 50
         self.max_requests_sample = 1
 
-
-    async def collect(self, collect_task: CollectTask):
+    def generate_request_params(self, collect_task: CollectTask):
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
@@ -46,6 +45,10 @@ class YoutubeCollector:
         
         if collect_task.data_sources is not None and len(collect_task.data_sources) == 1:
             params['channelId'] = collect_task.data_sources[0].platform_id
+
+
+    async def collect(self, collect_task: CollectTask):
+        params = self.generate_request_params(collect_task)
         
         dfs = self._collect(params)
         posts = self._df_to_posts(dfs)
@@ -59,8 +62,15 @@ class YoutubeCollector:
     
         return posts 
 
-    def get_hit_counts(self, collect_task: CollectTask) -> int:
-        return 100 
+    async def get_hits_count(self, collect_task: CollectTask) -> int:
+        params = self.generate_request_params(collect_task)
+
+        res = self._youtube_search(params).json()
+
+        hits_count = res['pageInfo']['totalResults']
+        self.log.info(f'[YouTube] Hits count - {hits_count}')
+
+        return hits_count
 
 
     @staticmethod

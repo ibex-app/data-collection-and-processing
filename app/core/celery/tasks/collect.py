@@ -12,7 +12,7 @@ from app.core.dao.collect_actions_dao import get_collect_actions
 from app.core.dao.post_dao import remove_duplicates_from_db
 
 from ibex_models import CollectTask, Post
-
+from app.config.mongo_config import init_mongo
 
 @celery.task(name='app.core.celery.tasks.collect')
 def collect(collect_task: str):
@@ -28,7 +28,20 @@ def collect(collect_task: str):
         return
     collector_class = collector_classes[collect_task.platform]()
     
-    asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, collect_task))
+    if collect_task.get_hits_count:
+        asyncio.run(collect_and_save_hits_count_in_mongo(collector_class.get_hits_count, collect_task))
+    else:
+        asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, collect_task))
+
+
+async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: CollectTask):
+    await init_mongo()
+    hits_count: List[Post] = await collector_method(collect_task)
+    collect_task_ = await CollectTask.find_one(CollectTask.id == collect_task.id)
+
+    collect_task_.hits_count = hits_count
+    collect_task_.sample = False
+    await collect_task_.save()
 
 
 async def collect_and_save_items_in_mongo(collector_method, collect_task: CollectTask):
@@ -41,7 +54,6 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
     :param collector_args:
     :return:
     """
-    from app.config.mongo_config import init_mongo
     await init_mongo()
 
     # execute collect action
@@ -53,5 +65,3 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
 
     if len(collected_items):
         await Post.insert_many(collected_items)
-
-    
