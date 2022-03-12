@@ -34,5 +34,5 @@ async def download_and_update_mongo(processor_method, task: ProcessTask):
 
     if process_status:
         pass
-        # task.post.mdeia_download_status = MediaDownloadStatus.downloaded
+        # task.post.mdeia_download_status = MediaStatus.downloaded
         # await Post.update()

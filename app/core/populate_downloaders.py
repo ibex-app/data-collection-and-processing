@@ -3,11 +3,11 @@ from typing import List
 from beanie.odm.operators.find.comparison import In
 from celery import chain, group
 from uuid import UUID
-from ibex_models import DownloadTask, Platform, Post, MediaDownloadStatus
+from ibex_models import DownloadTask, Platform, Post, MediaStatus
 from app.util.model_utils import serialize_to_base64
 
 def get_downloader_tasks(monitor_id:UUID):
-    posts_to_download = Post.find(In(Post.monitor_ids, monitor_id), Post.status == MediaDownloadStatus.to_be_downloaded)
+    posts_to_download = Post.find(In(Post.monitor_ids, monitor_id), Post.status == MediaStatus.to_be_downloaded)
 
     download_tasks = [DownloadTask(post_id=post_to_download.id, post=post_to_download, platform=Post.platform) for post_to_download in posts_to_download]
     
