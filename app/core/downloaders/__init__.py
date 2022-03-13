@@ -9,6 +9,6 @@ from app.core.downloaders.youtube.download_youtube import YoutubeDownloader
 downloader_classes = {
     Platform.twitter: TwitterDownloader,
     Platform.facebook: FacebookDownloader,
-    Platform.youtube: TVGeorgiaDownloader,
-    Platform.geotv: YoutubeDownloader,
+    Platform.youtube: YoutubeDownloader,
+    Platform.geotv: TVGeorgiaDownloader,
 }

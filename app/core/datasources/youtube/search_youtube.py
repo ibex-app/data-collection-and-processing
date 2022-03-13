@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
+from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask, MediaStatus, monitor
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
 from app.core.datasources.utils import update_hits_count
@@ -17,18 +17,19 @@ class YoutubeCollector:
 
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('YOUTUBE_TOKEN')
-        self.max_posts_per_call = 50
-        self.max_requests = 20
+        self.max_posts_per_call = 100 #TODO Exact max videos limit
+        self.max_requests = 1 #20
 
         self.max_posts_per_call_sample = 50
         self.max_requests_sample = 1
+
 
     def generate_request_params(self, collect_task: CollectTask):
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
         if collect_task.data_sources is not None and len(collect_task.data_sources) > 1:
-             self.log.error('[YouTube] Can not collect data from mode than one channel per call!')
+            self.log.error('[YouTube] Can not collect data from mode than one channel per call!')
 
         params = dict(
             part='snippet',
@@ -39,28 +40,26 @@ class YoutubeCollector:
             order='relevance',
             type='video'
         )
-        
+
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['q'] = collect_task.query
         
         if collect_task.data_sources is not None and len(collect_task.data_sources) == 1:
             params['channelId'] = collect_task.data_sources[0].platform_id
 
+        return params
+
 
     async def collect(self, collect_task: CollectTask):
         params = self.generate_request_params(collect_task)
         
-        dfs = self._collect(params)
-        posts = self._df_to_posts(dfs)
+        posts_from_api = self._collect(params)
+        posts = self.map_to_posts(posts_from_api, collect_task)
 
         self.log.success(f'[YouTube] {len(posts)} posts collected')
-        
-        if collect_task.sample:
-            self.log.info(f'[YouTube] Getting hits count')
-            hits_count = self.get_hits_count(collect_task)
-            await update_hits_count(collect_task, hits_count)
     
         return posts 
+
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
         params = self.generate_request_params(collect_task)
@@ -73,23 +72,24 @@ class YoutubeCollector:
         return hits_count
 
 
-    @staticmethod
-    @sleep_after(tag='YouTube')
-    def _youtube_search(params):
-        res = requests.get(
-            "https://youtube.googleapis.com/youtube/v3/search",
-            params=params)
-        return res
-
     def _collect(self, params):
+        ids = self.collect_ids(params)
+        collected_posts = self._get_video_details(ids)
+
+        if len(collected_posts) == 0:
+            self.log.warn('[YouTube] No data collected.')
+
+        return collected_posts
+
+
+    def collect_ids(self, params) -> List[str]:
         ids = []
         for i in range(self.max_requests_):
             res = self._youtube_search(params)
-
             res_dict = res.json()
+
             if 'items' not in res_dict or not len(res_dict['items']):
                 self.log.error('[YouTube] no items!')
-                self.log.error(res_dict)
             else:
                 for i in res_dict["items"]:
                     try:
@@ -103,66 +103,43 @@ class YoutubeCollector:
 
             params["pageToken"] = res_dict["nextPageToken"]
 
-        df = self._get_video_details(ids)
-        if df.shape[0] == 0:
-            self.log.warn('[YouTube] No data collected.')
-            return df
+        return ids
 
-        df["status"] = "media_needs_to_be_downloaded"
-        df["platform_id"] = df["id"]
-        df["url"] = df.platform_id.apply(lambda id: f'https://www.youtube.com/watch?v={id}')
-
-        return df
-
-    @staticmethod
-    @sleep_after(tag='YouTube')
-    def _youtube_details(params):
-        res = requests.get(
-            "https://www.googleapis.com/youtube/v3/videos", params=params)
-        return res
 
     def _get_video_details(self, ids):
         results = []
-        ids_chunks = [ids[i:i + self.max_results_per_call-1] for i in range(0, len(ids), self.max_results_per_call-1)]
+        ids_chunks = [ids[i:i + self.max_posts_per_call_-1] for i in range(0, len(ids), self.max_posts_per_call_-1)]
 
         for ids_chunk in ids_chunks:
             params = dict(
-                part='contentDetails,id,liveStreamingDetails,localizations,\
-                    recordingDetails,snippet,statistics,status,topicDetails',
+                part='contentDetails,id,liveStreamingDetails,localizations,recordingDetails,snippet,statistics,status,topicDetails',
                 id=','.join(ids_chunk),
                 key=self.token,
             )
 
-            res = requests.get(
-                "https://www.googleapis.com/youtube/v3/videos", params=params)
-            # res_dict = res.json()
+            res = self._youtube_details(params)
             results += res.json()["items"]
+            
+        return results
 
-        df = pd.DataFrame(results)
-
-        for i, row in df.iterrows():
-            for col in ['snippet', 'contentDetails',
-                        'status', 'statistics', 'topicDetails']:
-                if col not in row:
-                    continue
-                if type(row[col]) != dict:
-                    continue
-                for key in row[col]:
-                    if type(row[col][key]) == dict:
-                        continue
-                    if type(row[col][key]) == list:
-                        df.at[i, f'{col}_{key}'] = ','.join(row[col][key])
-                        continue
-                    try:
-                        df.at[i, f'{col}_{key}'] = row[col][key]
-                    except Exception as ex:
-                        self.log.info(f"[YouTube] No more pages to collect {ex}")
-
-        # logging.info(df.columns)
-        return df
 
     @staticmethod
-    def map_to_post(api_post: pd.Series) -> Post:
+    @sleep_after(tag='YouTube')
+    def _youtube_search(params):
+        res = requests.get("https://youtube.googleapis.com/youtube/v3/search",
+            params=params)
+        return res
+
+
+    @staticmethod
+    @sleep_after(tag='YouTube')
+    def _youtube_details(params):
+        res = requests.get("https://www.googleapis.com/youtube/v3/videos", params=params)
+        return res
+
+
+    @staticmethod
+    def map_to_post(api_post: Dict, collect_task: CollectTask) -> Post:
         # create scores class
         scores = None
         if 'statistics' in api_post:
@@ -176,38 +153,33 @@ class YoutubeCollector:
                             love=love,
                             engagement=engagement)
 
-        # create post class
-        snip = api_post['snippet']
 
-        try:
-            post_doc = Post(title=snip['title'],
-                             text=snip['description'] if 'description' in snip else '',
-                             created_at=snip['publishedAt'],
-                             platform=Platform.youtube,
-                             platform_id=api_post['id']['videoId'],
-                             scores=scores,
-                            #  image_url = f"https://img.youtube.com/vi/{snip['id']}/0.jpg",
-                             api_dump=dict(**api_post))
-        except:
-            post_doc = Post(title=snip['title'],
-                             text=snip['description'] if 'description' in snip else '',
-                             created_at=snip['publishedAt'],
-                             platform=Platform.youtube,
-                             platform_id='___',
-                             scores=scores,
-                             api_dump=dict(**api_post))   
+        post_doc = Post(    platform_id =       api_post['id'],
+                            title =             api_post['snippet']['title'],
+                            text =              api_post['snippet']['description'],
+                            created_at =        api_post['snippet']['publishedAt'],
+                            author_platform_id =api_post['snippet']['channelId'],
+                            image_url =         api_post['snippet']['thumbnails']['default']['url'],
+                            url =               f'https://www.youtube.com/watch?v={api_post["id"]}',
+                            platform =          Platform.youtube,
+                            monitor_ids =       [collect_task.monitor_id],
+                            api_dump =          dict(**api_post),
+                            scores =            scores,
+                            media_status =      MediaStatus.to_be_downloaded
+                        )
+    
         return post_doc
 
-    def _df_to_posts(self, df: pd.DataFrame) -> List[Post]:
-        posts = []
-        for obj in df.iterrows():
+
+    def map_to_posts(self, posts: List[Dict], collect_task: CollectTask):
+        res: List[Post] = []
+        for post in posts:
             try:
-                o = obj[1]
-                post = self.map_to_post(o)
-                posts.append(post)
+                post = self.map_to_post(post, collect_task)
+                res.append(post)
             except ValueError as e:
-                self.log.error(f'[YouTube] {e}')
-        return posts
+                self.log.error(f'[{collect_task.platform}] {e}')
+        return res
 
 
 

@@ -28,7 +28,7 @@ async def download_and_update_mongo(processor_method, task: ProcessTask):
     from app.config.mongo_config import init_mongo
     await init_mongo()
 
-    task.post = await Post.find(Post.id == task.post_id)
+    task.post = await Post.find(Post.id == task.post.id)
 
     process_status = processor_method(task)
 

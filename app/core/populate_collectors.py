@@ -58,6 +58,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         data_source: List[DataSource] = await get_data_sources(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
 
+        
+
         # Generateing hits count task here
         if sample:
             hits_count_tasks = split_to_tasks(data_source, search_terms, collect_action, monitor.date_from, monitor.date_to, sample)
@@ -88,6 +90,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     if sample and len(collect_tasks):
         await CollectTask.insert_many(collect_tasks)
     
+    print('Collector tasks here...')
+    print(f'{len(collect_tasks)} collect tasks created...')
     # Create separate task groups for platforms, that groups can be executed in parallel 
     for platform in Platform:
         collect_tasks_group = [collect_task for collect_task in collect_tasks if collect_task.platform == platform]

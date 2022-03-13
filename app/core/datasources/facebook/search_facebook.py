@@ -100,7 +100,7 @@ class FacebookCollector:
         return hits_count
 
     @staticmethod
-    def map_to_post(api_post: Dict, monitor_id: UUID) -> Post:
+    def map_to_post(api_post: Dict, collect_task: CollectTask) -> Post:
         # create scores class
         scores = None
         if 'statistics' in api_post and 'actual' in api_post['statistics']:
@@ -137,20 +137,20 @@ class FacebookCollector:
                              author_platform_id=api_post['account']['id'] if 'account' in api_post else None,
                              scores=scores,
                              api_dump=api_post,
-                             monitor_id=monitor_id,
+                             monitor_id=collect_task.monitor_id,
                              url=url
                              )
         return post_doc
 
 
-    def _map_to_posts(self, posts: List[Dict], monitor_id: UUID):
+    def _map_to_posts(self, posts: List[Dict], collect_task: CollectTask):
         res: List[Post] = []
         for post in posts:
             try:
-                post = self.map_to_post(post, monitor_id)
+                post = self.map_to_post(post, collect_task)
                 res.append(post)
             except ValueError as e:
-                self.log.error(f'[Facebook] {e}')
+                self.log.error(f'[{collect_task.platform}] {e}')
         return res
 
 

@@ -20,18 +20,18 @@ def download(task: str):
     downloader_class = downloader_classes[task.platform]()
     downloader_method = downloader_class.download
 
-
     asyncio.run(download_and_update_mongo(downloader_method, task))
     
+
 async def download_and_update_mongo(downloader_method, task: DownloadTask):
 
     from app.config.mongo_config import init_mongo
     await init_mongo()
 
-    task.post = await Post.find(Post.id == task.post_id)
+    task.post = await Post.find_one(Post.id == task.post.id)
+    download_status = await downloader_method(task)
 
-    download_status = downloader_method(task)
+    # if download_status:
+    #     task.post.mdeia_download_status = MediaStatus.downloaded
+    #     await Post.update()
 
-    if download_status:
-        task.post.mdeia_download_status = MediaStatus.downloaded
-        await Post.update()

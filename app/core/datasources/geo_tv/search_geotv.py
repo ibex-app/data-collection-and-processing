@@ -51,7 +51,7 @@ class TVGeorgiaCollector:
 
     def _collect(self, data_source: DataSource, date_from: datetime, date_to: datetime):
         full_program = TVGeorgiaCollector._get_program(data_source.platform_id, date_from, date_to)
-        res = self._map_to_posts(full_program["data"])
+        res = self.map_to_posts(full_program["data"])
         for e in res:
             e.data_source_id = data_source.id
         return res
@@ -86,7 +86,7 @@ class TVGeorgiaCollector:
                              api_dump=api_post)
         return post_doc
 
-    def _map_to_posts(self, posts: List[Dict]):
+    def map_to_posts(self, posts: List[Dict]):
         res: List[Post] = []
         for post in posts:
             try:

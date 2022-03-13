@@ -17,14 +17,13 @@ from app.config.constants import media_directory
 @slf
 class YoutubeDownloader:
     def __init__(self, *args, **kwargs):
-
         self.token = os.getenv('YOUTUBE_TOKEN')
 
-    def download(self, task: DownloadTask):
+    async def download(self, task: DownloadTask):
         try:
-            self.log.info(f'[YouTube] Downloading media for {task.url}')
-            video = YouTube(task.url)
+            self.log.info(f'[YouTube] Downloading media for {task.post.url}')
+            video = YouTube(task.post.url)
             stream = video.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().last()
-            stream.download(filename=f'{media_directory}{task.post_id}.mp4')
+            stream.download(filename=f'{media_directory}{task.post.id}.mp4')
         except:
-            self.log.error(f'[YouTube] Faild to download media for {task.url}')
+            self.log.error(f'[YouTube] Faild to download media for {task.post.url}')

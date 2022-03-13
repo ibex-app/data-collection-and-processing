@@ -50,4 +50,4 @@ number_to_month = {
     '12': 'Dec',
 }
 
-media_directory = '/home/media/'
+media_directory = '/root/media/'

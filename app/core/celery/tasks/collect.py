@@ -9,7 +9,7 @@ from app.util.model_utils import deserialize_from_base64
 from app.core.datasources import collector_classes
 from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
-from app.core.dao.post_dao import remove_duplicates_from_db
+from app.core.dao.post_dao import insert_posts
 
 from ibex_models import CollectTask, Post
 from app.config.mongo_config import init_mongo
@@ -55,13 +55,11 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
     :return:
     """
     await init_mongo()
+    
 
     # execute collect action
-    collected_items: List[Post] = await collector_method(collect_task)
+    collected_posts: List[Post] = await collector_method(collect_task)
+    
+    count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
 
-    # remove duplicates
-    # TODO add monitor_id to post if in two or more results
-    collected_items = await remove_duplicates_from_db(collected_items)
-
-    if len(collected_items):
-        await Post.insert_many(collected_items)
+    print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')

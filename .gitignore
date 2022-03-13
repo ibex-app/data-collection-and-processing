@@ -1,7 +1,7 @@
 **/__pycache__
 db.sqlite3
 app/config/secrets.env
-server.sh
+_main.sh
 **.ipynb
 local/**
 local
