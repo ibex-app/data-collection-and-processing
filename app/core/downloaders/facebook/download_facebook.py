@@ -84,6 +84,6 @@ class FacebookDownloader:
     # def get_fb_video():
 
     def download(task: DownloadTask):
-        get_fb_video('task.url', task.post_id)
+        get_fb_video('task.url', task.post.platform_id)
         logging.info('fb collection started - more data in logs...')
         return True
