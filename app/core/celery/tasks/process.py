@@ -7,7 +7,7 @@ from app.util.model_utils import deserialize_from_base64
 from app.core.processors import processor_classes
 from app.core.celery.worker import celery
 
-from ibex_models import Post, ProcessTask
+from ibex_models import Post, ProcessTask, MediaStatus
 
 @celery.task(name='app.core.celery.tasks.process')
 def process(task: str):
@@ -28,11 +28,10 @@ async def download_and_update_mongo(processor_method, task: ProcessTask):
     from app.config.mongo_config import init_mongo
     await init_mongo()
 
-    task.post = await Post.find(Post.id == task.post.id)
+    task.post = await Post.find_one(Post.id == task.post.id)
 
     process_status = processor_method(task)
 
     if process_status:
-        pass
-        # task.post.mdeia_download_status = MediaStatus.downloaded
-        # await Post.update()
+        task.post.mdeia_status = MediaStatus.processed
+        await Post.update()

@@ -25,5 +25,7 @@ class YoutubeDownloader:
             video = YouTube(task.post.url)
             stream = video.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().last()
             stream.download(filename=f'{media_directory}{task.post.id}.mp4')
+            return True
         except:
             self.log.error(f'[YouTube] Faild to download media for {task.post.url}')
+        

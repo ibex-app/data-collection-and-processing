@@ -31,7 +31,7 @@ async def download_and_update_mongo(downloader_method, task: DownloadTask):
     task.post = await Post.find_one(Post.id == task.post.id)
     download_status = await downloader_method(task)
 
-    # if download_status:
-    #     task.post.mdeia_download_status = MediaStatus.downloaded
-    #     await Post.update()
+    if download_status:
+        task.post.mdeia_download_status = MediaStatus.downloaded
+        await Post.update()
 
