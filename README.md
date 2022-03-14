@@ -6,6 +6,14 @@ You must have a Redis DB instance running (which is currently used as the Celery
 
 You must also have a MongoDB instance running as the application's write layer.
 
+stateDiagram-v2
+main.py --> Get Monitor by id 
+Get Monitor by id --> Get corresponding CollectActions (sub-monitors)
+Still --> Moving
+Moving --> Still
+Moving --> Crash
+Crash --> [*]
+
 ## Usage
 
 0. Clone repository for models
@@ -42,6 +50,14 @@ python main.py --monitor_id=XXXXXXXXXXXXXX --sample=True
 python celery -A app.core.celery.worker flower
 ```
 
+
+stateDiagram-v2
+[*] --> Still
+Still --> [*]
+Still --> Moving
+Moving --> Still
+Moving --> Crash
+Crash --> [*]
 
 And make sure to include **CROWDTANGLE_TOKEN** and **YOUTUBE_TOKEN** 
 as environment variables and set credentials into app/core/datasources/twitter/.twitter_keys.yaml 
