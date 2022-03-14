@@ -84,7 +84,7 @@ graph LR
 B(Collect posts from accounts with tag x) --> C(Collect posts from accounts with tag x from Facebook)
 B --> D(Collect posts from accounts with tag x from Youtube)
 B --> E(Collect posts from accounts with tag x from Twitter)
-B -->|N/A| F(Collect posts from accounts with tag x from Telegram)
+B --> F(Collect posts from accounts with tag x from Telegram)
 B --> G(Collect posts from accounts with tag x from VKontakte)
 C --> I(Collect posts from accounts with tag x from 0-10 from Facebook)
 C --> J(Collect posts from accounts with tag x from 10-20 from Facebook)
