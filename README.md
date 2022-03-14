@@ -63,3 +63,14 @@ F --> G(Run DownloadTasks)
 G --> H(Generate ProcessTasks)
 H --> I(Run ProcessTasks)
 ```
+
+```mermaid
+flowchart LR
+B(Get Monitor) --> C(Get CollectActions)
+C --> D(Generate CollectTasks)
+D --> E(Run CollectTasks)
+E --> F(Generate DownloadTasks)
+F --> G(Run DownloadTasks)
+G --> H(Generate ProcessTasks)
+H --> I(Run ProcessTasks)
+```
