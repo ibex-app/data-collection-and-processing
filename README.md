@@ -64,13 +64,17 @@ G --> H(Generate ProcessTasks)
 H --> I(Run ProcessTasks)
 ```
 
+***Firehose
 ```mermaid
 flowchart LR
-B(Get Monitor) --> C(Get CollectActions)
-C --> D(Generate CollectTasks)
-D --> E(Run CollectTasks)
-E --> F(Generate DownloadTasks)
-F --> G(Run DownloadTasks)
-G --> H(Generate ProcessTasks)
-H --> I(Run ProcessTasks)
+B(Collect posts mentioning search terms with tag x) --> C(Collect posts mentioning search terms with tag x from Facebook)
+B --> D(Collect posts mentioning search terms with tag x from Youtube)
+B --> E(Collect posts mentioning search terms with tag x from Twitter)
+B -->|N/A| F(Collect posts mentioning search terms with tag x from Telegram)
+B --> G(Collect posts mentioning search terms with tag x from VKontakte)
+B --> H(...)
+C --> I(Collect posts mentioning search terms with tag x[:10] from Facebook)
+C --> J(Collect posts mentioning search terms with tag x[10:20] from Facebook)
+C --> K(Collect posts mentioning search terms with tag x[20:30] from Facebook)
+C --> L(...)
 ```
