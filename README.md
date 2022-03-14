@@ -64,17 +64,30 @@ G --> H(Generate ProcessTasks)
 H --> I(Run ProcessTasks)
 ```
 
-***Firehose
+### Firehose
 ```mermaid
-flowchart LR
+graph LR
 B(Collect posts mentioning search terms with tag x) --> C(Collect posts mentioning search terms with tag x from Facebook)
 B --> D(Collect posts mentioning search terms with tag x from Youtube)
 B --> E(Collect posts mentioning search terms with tag x from Twitter)
 B -->|N/A| F(Collect posts mentioning search terms with tag x from Telegram)
 B --> G(Collect posts mentioning search terms with tag x from VKontakte)
-B --> H(...)
-C --> I(Collect posts mentioning search terms with tag x[:10] from Facebook)
-C --> J(Collect posts mentioning search terms with tag x[10:20] from Facebook)
-C --> K(Collect posts mentioning search terms with tag x[20:30] from Facebook)
+C --> I(Collect posts mentioning search terms with tag x 0-10 from Facebook)
+C --> J(Collect posts mentioning search terms with tag x 10-20 from Facebook)
+C --> K(Collect posts mentioning search terms with tag x 20-30 from Facebook)
+C --> L(...)
+```
+
+### Curated
+```mermaid
+graph LR
+B(Collect posts from accounts with tag x) --> C(Collect posts from accounts with tag x from Facebook)
+B --> D(Collect posts from accounts with tag x from Youtube)
+B --> E(Collect posts from accounts with tag x from Twitter)
+B -->|N/A| F(Collect posts from accounts with tag x from Telegram)
+B --> G(Collect posts from accounts with tag x from VKontakte)
+C --> I(Collect posts from accounts with tag x from 0-10 from Facebook)
+C --> J(Collect posts from accounts with tag x from 10-20 from Facebook)
+C --> K(Collect posts from accounts with tag x from 20-30 from Facebook)
 C --> L(...)
 ```
