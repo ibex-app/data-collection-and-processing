@@ -55,8 +55,7 @@ DataSource (account)
 
 ```mermaid
 flowchart LR
-A(main.py) --> B(Get Monitor)
-B --> C(Get CollectActions)
+B(Get Monitor) --> C(Get CollectActions)
 C --> D(Generate CollectTasks)
 D --> E(Run CollectTasks)
 E --> F(Generate DownloadTasks)
