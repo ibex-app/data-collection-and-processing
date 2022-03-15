@@ -42,7 +42,52 @@ python main.py --monitor_id=XXXXXXXXXXXXXX --sample=True
 python celery -A app.core.celery.worker flower
 ```
 
-
 And make sure to include **CROWDTANGLE_TOKEN** and **YOUTUBE_TOKEN** 
 as environment variables and set credentials into app/core/datasources/twitter/.twitter_keys.yaml 
 file for the respective collectors to work properly.
+
+Monitor -> CollectActions (sub-monitors) -> CollectTasks
+
+Platform (data source)
+DataSource (account)
+
+
+
+```mermaid
+flowchart LR
+B(Get Monitor) --> C(Get CollectActions)
+C --> D(Generate CollectTasks)
+D --> E(Run CollectTasks)
+E --> F(Generate DownloadTasks)
+F --> G(Run DownloadTasks)
+G --> H(Generate ProcessTasks)
+H --> I(Run ProcessTasks)
+```
+
+### Firehose
+```mermaid
+graph LR
+B(Collect posts mentioning search terms with tag x) --> C(Collect posts mentioning search terms with tag x from Facebook)
+B --> D(Collect posts mentioning search terms with tag x from Youtube)
+B --> E(Collect posts mentioning search terms with tag x from Twitter)
+B -->|N/A| F(Collect posts mentioning search terms with tag x from Telegram)
+B --> G(Collect posts mentioning search terms with tag x from VKontakte)
+C --> I(Collect posts mentioning search terms with tag x 0-10 from Facebook)
+C --> J(Collect posts mentioning search terms with tag x 10-20 from Facebook)
+C --> K(Collect posts mentioning search terms with tag x 20-30 from Facebook)
+C --> L(...)
+```
+
+### Curated
+```mermaid
+graph LR
+B(Collect posts from accounts with tag x) --> C(Collect posts from accounts with tag x from Facebook)
+B --> D(Collect posts from accounts with tag x from Youtube)
+B --> E(Collect posts from accounts with tag x from Twitter)
+B --> F(Collect posts from accounts with tag x from Telegram)
+B --> G(Collect posts from accounts with tag x from VKontakte)
+C --> I(Collect posts from accounts with tag x from 0-10 from Facebook)
+C --> J(Collect posts from accounts with tag x from 10-20 from Facebook)
+C --> K(Collect posts from accounts with tag x from 20-30 from Facebook)
+C --> L(...)
+```
