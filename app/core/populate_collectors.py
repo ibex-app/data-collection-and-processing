@@ -90,7 +90,6 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     if sample and len(collect_tasks):
         await CollectTask.insert_many(collect_tasks)
     
-    print('Collector tasks here...')
     print(f'{len(collect_tasks)} collect tasks created...')
     # Create separate task groups for platforms, that groups can be executed in parallel 
     for platform in Platform:

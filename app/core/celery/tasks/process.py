@@ -20,18 +20,18 @@ def process(task: str):
     processor_class = processor_classes[task.processor]()
     processor_method = processor_class.process
 
-    asyncio.run(download_and_update_mongo(processor_method, task))
+    asyncio.run(process_and_update_mongo(processor_method, task))
     
 
-async def download_and_update_mongo(processor_method, task: ProcessTask):
+async def process_and_update_mongo(processor_method, task: ProcessTask):
 
     from app.config.mongo_config import init_mongo
     await init_mongo()
 
-    task.post = await Post.find_one(Post.id == task.post.id)
+    task.post = await Post.get(task.post.id)
 
-    process_status = processor_method(task)
+    process_status = await processor_method(task)
 
     if process_status:
-        task.post.mdeia_status = MediaStatus.processed
-        await Post.update()
+        task.post.media_status = MediaStatus.processed
+        await task.post.save()

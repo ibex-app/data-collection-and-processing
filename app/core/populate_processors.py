@@ -16,6 +16,8 @@ async def get_processor_tasks(monitor_id:UUID):
 
     process_tasks: List[ProcessTask] = [ProcessTask(post=post_to_process, processor=Processor.speech_to_text) for post_to_process in posts_to_process]
     
+    print(f'{len(process_tasks)} process tasks created...')
+
     tasks_group = []
     tasks_group.append(process.map([serialize_to_base64(task) for task in process_tasks]))
     
