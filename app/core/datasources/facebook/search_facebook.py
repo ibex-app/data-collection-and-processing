@@ -7,7 +7,7 @@ from uuid import UUID
 
 from typing import List, Dict
 
-from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask
+from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
 from app.core.datasources.utils import update_hits_count
@@ -44,8 +44,8 @@ class FacebookCollector:
         
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['searchTerm'] = collect_task.query
-        if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
-            params['accounts'] = ','.join([data_source.platform_id for data_source in collect_task.data_sources])
+        if collect_task.accounts is not None and len(collect_task.accounts) > 0:
+            params['accounts'] = ','.join([account.platform_id for account in collect_task.accounts])
 
         return params
 
@@ -162,11 +162,11 @@ class FacebookCollector:
 #     await init_mongo()
 #     date_from = datetime.now() - timedelta(days=5)
 #     date_to = datetime.now() - timedelta(days=1)
-#     data_sources = await DataSource.find(DataSource.platform == Platform.facebook).to_list()
+#     accounts = await Account.find(Account.platform == Platform.facebook).to_list()
 #     fb = FacebookCollector()
 #     res = fb.collect_curated_batch(date_from=date_from.isoformat(),
 #                                     date_to=date_to.isoformat(),
-#                                     data_sources=data_sources)
+#                                     accounts=accounts)
 #     print(res)
 #
 #

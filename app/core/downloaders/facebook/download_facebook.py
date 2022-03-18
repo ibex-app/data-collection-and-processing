@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, DownloadTask
+from ibex_models import Account, SearchTerm, Post, Scores, Platform, DownloadTask
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
 

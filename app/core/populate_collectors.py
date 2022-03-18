@@ -7,7 +7,7 @@ from celery import chain, group
 from app.config.logging_config import log
 from app.util.model_utils import serialize_to_base64
 from app.core.dao.collect_actions_dao import get_collect_actions
-from ibex_models import CollectAction, CollectTask, DataSource, SearchTerm, Platform, Monitor
+from ibex_models import CollectAction, CollectTask, Account, SearchTerm, Platform, Monitor
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
@@ -24,14 +24,14 @@ async def get_collector_tasks(monitor_id:UUID, sample: bool = False) -> List[cha
     return tasks_group
 
 
-async def get_data_sources(collect_action: CollectAction) -> List[DataSource]:
-    if collect_action.data_source_tags is None or len(collect_action.data_source_tags) == 0:
+async def get_accounts(collect_action: CollectAction) -> List[Account]:
+    if collect_action.account_tags is None or len(collect_action.account_tags) == 0:
         return []
 
-    if '*' not in collect_action.data_source_tags:
-        return await DataSource.find(DataSource.platform == collect_action.platform, In(DataSource.tags, collect_action.data_source_tags)).to_list()
+    if '*' not in collect_action.account_tags:
+        return await Account.find(Account.platform == collect_action.platform, In(Account.tags, collect_action.account_tags)).to_list()
     
-    return await DataSource.find(DataSource.platform == collect_action.platform).to_list()
+    return await Account.find(Account.platform == collect_action.platform).to_list()
 
 
 async def get_search_terms(collect_action: CollectAction) -> List[SearchTerm]:
@@ -55,14 +55,14 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
     for collect_action in collect_actions:
         
-        data_source: List[DataSource] = await get_data_sources(collect_action)
+        account: List[Account] = await get_accounts(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
 
         
 
         # Generateing hits count task here
         if sample:
-            hits_count_tasks = split_to_tasks(data_source, search_terms, collect_action, monitor.date_from, monitor.date_to, sample)
+            hits_count_tasks = split_to_tasks(account, search_terms, collect_action, monitor.date_from, monitor.date_to, sample)
             for hits_count_task in hits_count_tasks:
                 hits_count_task.get_hits_count = True
             collect_tasks += hits_count_tasks 
@@ -80,7 +80,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # .. ]
 
         for (date_from, date_to) in time_intervals:
-            collect_tasks += split_to_tasks(data_source, search_terms, collect_action, date_from, date_to, sample)
+            collect_tasks += split_to_tasks(account, search_terms, collect_action, date_from, date_to, sample)
 
         if not sample: 
             ## Update last collection time 

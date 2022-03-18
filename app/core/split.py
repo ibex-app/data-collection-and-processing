@@ -1,5 +1,5 @@
 from app.core.declensions import get_declensions
-from ibex_models import SearchTerm, Platform, CollectAction, DataSource, CollectTask, Monitor
+from ibex_models import SearchTerm, Platform, CollectAction, Account, CollectTask, Monitor
 from datetime import datetime, timedelta
 from typing import List, Tuple
 import langid
@@ -50,10 +50,10 @@ query_length_[Platform.twitter] = 256
 
 query_length_[Platform.youtube] = 2000
 
-def get_query_length(collect_action: CollectAction, data_sources: List[DataSource]) -> int:
+def get_query_length(collect_action: CollectAction, accounts: List[Account]) -> int:
     query_length = query_length_[collect_action.platform]
 
-    if collect_action.platform == Platform.twitter and len(data_sources) > 0:
+    if collect_action.platform == Platform.twitter and len(accounts) > 0:
         query_length -= 84
     
     return query_length
@@ -76,7 +76,7 @@ def split_complex_query(keyword, operators):
 
     return words, statements
 
-def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, data_sources: List[DataSource]):
+def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, accounts: List[Account]):
     terms:List[str] = [search_term.term for search_term in search_terms]
 
     if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
@@ -85,7 +85,7 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
     all_queries = []
     full_query = ''
     operators = boolean_operators[collect_action.platform]
-    query_length_for_platform = get_query_length(collect_action, data_sources)
+    query_length_for_platform = get_query_length(collect_action, accounts)
     
 
     for keyword in terms:
@@ -129,23 +129,23 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
     return all_queries
 
 
-def split_sources(data_sources:List[DataSource], collect_action: CollectAction):
+def split_sources(accounts:List[Account], collect_action: CollectAction):
     if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
-        return data_sources
+        return accounts
 
     chunk_sizes = dict() 
     chunk_sizes[Platform.facebook] = 10
     chunk_sizes[Platform.youtube] = 1
     chunk_sizes[Platform.twitter] = 3
 
-    return list(split_to_chunks(data_sources, chunk_sizes[collect_action.platform]))
+    return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
 
 
 
-def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
-    sub_queries = split_queries(search_terms, collect_action, data_sources)[:5]
-    sub_data_sources = split_sources(data_sources, collect_action)
-    # print(data_sources, search_terms, collect_action, date_from, date_to, sample)
+def split_to_tasks(accounts: List[Account], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
+    sub_queries = split_queries(search_terms, collect_action, accounts)[:5]
+    sub_accounts = split_sources(accounts, collect_action)
+    # print(accounts, search_terms, collect_action, date_from, date_to, sample)
     # return []
     collect_tasks:List[CollectTask] = []
     
@@ -157,17 +157,17 @@ def split_to_tasks(data_sources: List[DataSource], search_terms: List[SearchTerm
         sample=sample
     )
     
-    if len(sub_data_sources) > 0 and len(sub_queries) > 0:
-        for sub_data_source in sub_data_sources:
+    if len(sub_accounts) > 0 and len(sub_queries) > 0:
+        for sub_account in sub_accounts:
             for sub_query in sub_queries:
                 collect_task_ = deepcopy(collect_task)
-                collect_task_.data_sources = sub_data_source
+                collect_task_.accounts = sub_account
                 collect_task_.query = sub_query
                 collect_tasks.append(collect_task_)
-    elif len(sub_data_sources) > 0:
-        for sub_data_source in sub_data_sources:
+    elif len(sub_accounts) > 0:
+        for sub_account in sub_accounts:
             collect_task_ = deepcopy(collect_task)
-            collect_task_.data_sources = sub_data_source
+            collect_task_.accounts = sub_account
             collect_tasks.append(collect_task_)
     elif len(sub_queries) > 0:
          for sub_query in sub_queries:

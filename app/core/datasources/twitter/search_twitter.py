@@ -17,7 +17,7 @@ import pandas as pd
 from itertools import chain
 import json
 
-from ibex_models import DataSource, CollectTask, Platform, Post, Scores, SearchTerm
+from ibex_models import Account, CollectTask, Platform, Post, Scores, SearchTerm
 
 
 class TweetFields(Enum):
@@ -107,8 +107,8 @@ class TwitterCollector:
         if collect_task.query is not None and len(collect_task.query) > 0:
             query = collect_task.query
 
-        if collect_task.data_sources is not None and len(collect_task.data_sources) > 0:
-            accounts_query = ' OR '.join([f'from:{data_source.platform_id}' for data_source in collect_task.data_sources])
+        if collect_task.accounts is not None and len(collect_task.accounts) > 0:
+            accounts_query = ' OR '.join([f'from:{account.platform_id}' for account in collect_task.accounts])
             query = f'({accounts_query}) ' + query
         return query
 
@@ -282,11 +282,11 @@ class TwitterCollector:
 #     from app.config.mongo_config import init_mongo
 #     await init_mongo()
 #     twitter = TwitterCollector()
-#     # data_source = await DataSource.find_one()
-#     data_source = DataSource(title='', platform_id='katyperry', platform=Platform.twitter, url='')
-#     data_source2 = DataSource(title='', platform_id='ddlovato', platform=Platform.twitter, url='')
+#     # account = await Account.find_one()
+#     account = Account(title='', platform_id='katyperry', platform=Platform.twitter, url='')
+#     account2 = Account(title='', platform_id='ddlovato', platform=Platform.twitter, url='')
 #     res = twitter.collect_curated_batch(
-#         data_sources=[data_source, data_source2],
+#         accounts=[account, account2],
 #         date_from=datetime.today() - timedelta(days=7),
 #         date_to=datetime.today() - timedelta(minutes=2))
 #     print(res[0])

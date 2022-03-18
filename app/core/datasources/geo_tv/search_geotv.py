@@ -6,7 +6,7 @@ from typing import List, Dict
 import requests
 import pandas as pd
 
-from ibex_models import DataSource, SearchTerm, Post, Platform, CollectTask
+from ibex_models import Account, SearchTerm, Post, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 
 
@@ -44,16 +44,16 @@ class TVGeorgiaCollector:
 
     def collect(self, collect_task: CollectTask):
         posts: List[Post] = []
-        for data_source in collect_task.data_sources:
-            res = self._collect(data_source=data_source, date_from=collect_task.date_from, date_to=collect_task.date_to)
+        for account in collect_task.accounts:
+            res = self._collect(account=account, date_from=collect_task.date_from, date_to=collect_task.date_to)
             posts.extend(res)
         return posts
 
-    def _collect(self, data_source: DataSource, date_from: datetime, date_to: datetime):
-        full_program = TVGeorgiaCollector._get_program(data_source.platform_id, date_from, date_to)
+    def _collect(self, account: Account, date_from: datetime, date_to: datetime):
+        full_program = TVGeorgiaCollector._get_program(account.platform_id, date_from, date_to)
         res = self.map_to_posts(full_program["data"])
         for e in res:
-            e.data_source_id = data_source.id
+            e.account_id = account.id
         return res
 
     @staticmethod
@@ -103,11 +103,11 @@ class TVGeorgiaCollector:
 #     await init_mongo()
 #     date_from = datetime.now() - timedelta(days=5)
 #     date_to = datetime.now() - timedelta(days=1)
-#     data_sources = await DataSource.find(DataSource.platform == Platform.geotv).to_list()
+#     accounts = await Account.find(Account.platform == Platform.geotv).to_list()
 #     geotv = TVGeorgiaCollector()
 #     res = geotv.collect_curated_single(date_from=date_from,
 #                                         date_to=date_to,
-#                                         data_source=data_sources[0])
+#                                         account=accounts[0])
 #     print(res)
 #
 #

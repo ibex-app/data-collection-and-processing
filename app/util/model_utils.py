@@ -66,9 +66,9 @@ def deserialize_from_base64(obj: str):
 
 # async def test():
 #     client = AsyncIOMotorClient('mongodb://127.0.0.1:27017/')
-#     await init_beanie(database=client.ibex, document_models=[CollectAction, SearchTerm, DataSource, Post])
+#     await init_beanie(database=client.ibex, document_models=[CollectAction, SearchTerm, Account, Post])
 #
-#     data_source = DataSource(
+#     account = Account(
 #         title="title",
 #         platform=Platform.twitter,
 #         platform_id="pid",
@@ -76,7 +76,7 @@ def deserialize_from_base64(obj: str):
 #         program_title='ptitle',
 #         tags=['***']
 #     )
-#     data_source2 = DataSource(
+#     account2 = Account(
 #         title="title",
 #         platform=Platform.twitter,
 #         platform_id="pid",
@@ -84,7 +84,7 @@ def deserialize_from_base64(obj: str):
 #         program_title='ptitle2',
 #         tags=['***']
 #     )
-#     data_source3 = DataSource(
+#     account3 = Account(
 #         title="title",
 #         platform=Platform.twitter,
 #         platform_id="pid",
@@ -102,8 +102,8 @@ def deserialize_from_base64(obj: str):
 #         curated=True,
 #         date_from=(datetime.now() - timedelta(hours=18)),
 #         date_to=datetime.now(),
-#         data_source=data_source,
-#         data_sources=[data_source2, data_source3],
+#         account=account,
+#         accounts=[account2, account3],
 #         search_terms=[search_term]
 #     )
 #     task_dict = obj_to_typed_dict_nested(collect_task)

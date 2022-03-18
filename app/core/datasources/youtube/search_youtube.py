@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-from ibex_models import DataSource, SearchTerm, Post, Scores, Platform, CollectTask, MediaStatus, monitor
+from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask, MediaStatus, monitor
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
 from app.core.datasources.utils import update_hits_count
@@ -28,7 +28,7 @@ class YoutubeCollector:
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
-        if collect_task.data_sources is not None and len(collect_task.data_sources) > 1:
+        if collect_task.accounts is not None and len(collect_task.accounts) > 1:
             self.log.error('[YouTube] Can not collect data from mode than one channel per call!')
 
         params = dict(
@@ -44,8 +44,8 @@ class YoutubeCollector:
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['q'] = collect_task.query
         
-        if collect_task.data_sources is not None and len(collect_task.data_sources) == 1:
-            params['channelId'] = collect_task.data_sources[0].platform_id
+        if collect_task.accounts is not None and len(collect_task.accounts) == 1:
+            params['channelId'] = collect_task.accounts[0].platform_id
 
         return params
 
@@ -189,11 +189,11 @@ class YoutubeCollector:
 #     await init_mongo()
 #     date_from = datetime.now() - timedelta(days=5)
 #     date_to = datetime.now() - timedelta(days=1)
-#     data_sources = await DataSource.find(DataSource.platform == Platform.youtube).to_list()
+#     accounts = await Account.find(Account.platform == Platform.youtube).to_list()
 #     yt = YoutubeCollector()
 #     res = yt.collect_curated_single(date_from=date_from,
 #                                     date_to=date_to,
-#                                     data_source=data_sources[0])
+#                                     account=accounts[0])
 #     print(res)
 #
 #

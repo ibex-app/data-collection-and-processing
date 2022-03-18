@@ -3,7 +3,7 @@ import json
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from ibex_models import DataSource, SearchTerm, CollectAction, Post, Tag, CollectTask, Monitor
+from ibex_models import Account, SearchTerm, CollectAction, Post, Tag, CollectTask, Monitor
 
 import asyncio
 import os
@@ -12,8 +12,8 @@ class DBConstants:
     prefix = '../../'
     collect_actions = 'collect_actions'
     collect_actions_path = f'{prefix}resources/collect_actions.json'
-    data_sources = 'data_sources'
-    data_sources_path = f'{prefix}resources/data_sources.json'
+    accounts = 'accounts'
+    accounts_path = f'{prefix}resources/accounts.json'
     search_terms = 'search_terms'
     search_terms_path = f'{prefix}resources/search_terms.json'
     # TODO: Move to env
@@ -29,7 +29,7 @@ async def init_mongo():
     Initialize a connection to MongoDB
     """
     client = AsyncIOMotorClient(DB.connection_string)
-    await init_beanie(database=client.ibex, document_models=[CollectAction, DataSource, SearchTerm, Post, Tag, CollectTask, Monitor])
+    await init_beanie(database=client.ibex, document_models=[CollectAction, Account, SearchTerm, Post, Tag, CollectTask, Monitor])
 
     # post_doc = Post(title='example', created_at=datetime.now(), platform_id='example',
     #                      author_platform_id='example', api_dump='example')
@@ -49,10 +49,10 @@ async def fill_db():
         await CollectAction.find_all().delete()
         await CollectAction.insert_many([CollectAction(**ca) for ca in collect_actions])
 
-    with open(DB.data_sources_path, encoding='utf8') as f:
-        data_sources = json.load(f)[DB.data_sources]
-        await DataSource.find_all().delete()
-        await DataSource.insert_many([DataSource(**ds) for ds in data_sources])
+    with open(DB.accounts_path, encoding='utf8') as f:
+        accounts = json.load(f)[DB.accounts]
+        await Account.find_all().delete()
+        await Account.insert_many([Account(**ds) for ds in accounts])
 
     with open(DB.search_terms_path, encoding='utf8') as f:
         search_terms = json.load(f)[DB.search_terms]
