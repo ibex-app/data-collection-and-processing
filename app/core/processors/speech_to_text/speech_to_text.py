@@ -23,10 +23,10 @@ class SpeechToTextProcessor:
         self.split_audio_to_scenes(task.post, scenecuts)
         
         transcripts = self.get_transcripts(task.post, scenecuts)
-        self.log.info(f'[Speech_to_text] {task.post.id} transcripts')
+        self.log.info(f'[Speech_to_text] {task.post.id} transcripts : {len(transcripts)}')
 
         await self.save_post(task.post, transcripts)
-        self.log.info(f'[Speech_to_text] {task.post.id} save_post')
+        
         self.delete_audio_chunks(task.post)
 
         return True
@@ -60,7 +60,19 @@ class SpeechToTextProcessor:
         #     scenecuts.append({'pts_time': sec})
         #     sec += 160
 
-        return scenecuts
+        # Filter scenes smaller than X seconds
+
+        min_seconds_per_chunk = 7 
+        scenecuts_ = []
+        for i, scenecut in enumerate(scenecuts):
+            if i == len(scenecuts) - 1:
+                scenecuts_.append(scenecut)
+                continue
+
+            if scenecuts[i + 1]['pts_time'] - scenecut['pts_time'] > min_seconds_per_chunk:
+                scenecuts_.append(scenecut)
+
+        return scenecuts_
 
 
     def extract_audio(self, post:Post):
@@ -73,16 +85,16 @@ class SpeechToTextProcessor:
     def split_audio_to_scenes(self, post:Post, scenecuts):
         for i, frame in enumerate(scenecuts):
             duration = 99999999 if i == len(scenecuts) - 1 else scenecuts[i + 1]["pts_time"] - frame["pts_time"]
-            command = f'ffmpeg -ss {frame["pts_time"]} -i {media_directory}{post.id}/full.wav -t {duration} -c copy {media_directory}{post.id}/{frame["pts_time"]}s.wav'
+            command = f'ffmpeg -ss {frame["pts_time"]} -i {media_directory}{post.id}/full.wav -t {duration} -loglevel quiet -c copy {media_directory}{post.id}/{frame["pts_time"]}s.wav'
             os.popen(command).read()
 
-        self.log.info(f'[Speech_to_text] {len(scenecuts)} chuncks generated' )
+        self.log.info(f'[Speech_to_text] {post.id} {len(scenecuts)} chuncks generated' )
 
 
-    async def save_post(self, post:Post, transkripts:List[Transcript]):
-        self.log.info(transkripts)
-        post.transcripts = transkripts
-        await post.save()
+    async def save_post(self, post_:Post, transkripts:List[Transcript]):
+        self.log.info(f'[Speech_to_text] {post_.id} Saving post' )
+        post_.transcripts = transkripts
+        await post_.save()
 
 
     def get_transcripts(self, post:Post, scenecuts):
