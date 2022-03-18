@@ -27,7 +27,10 @@ async def process_and_update_mongo(processor_method, task: ProcessTask):
 
     from app.config.mongo_config import init_mongo
     await init_mongo()
-
+    # post = await Post.get(post.id)
+    # post.transcripts = transkripts
+    # await post.save()
+    
     task.post = await Post.get(task.post.id)
 
     process_status = await processor_method(task)

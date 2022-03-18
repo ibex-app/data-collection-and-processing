@@ -111,7 +111,6 @@ class SpeechToTextProcessor:
 
         return transcripts
 
-
     def delete_audio_chunks(self, post:Post):
         os.popen(f'ls -1 {media_directory}{post.id}| xargs rm -rfv').read()
         os.popen(f'rm -rf {media_directory}{post.id}').read()
