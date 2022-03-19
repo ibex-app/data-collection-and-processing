@@ -93,8 +93,9 @@ class FacebookCollector:
         params  = self.generate_request_params(collect_task)
         params['count'] = 0
         
-        hits_count = requests.get("https://api.crowdtangle.com/posts/search", params=params).content
+        responce = requests.get("https://api.crowdtangle.com/posts/search", params=params).json()
 
+        hits_count = responce["result"]["hitCount"]
         self.log.info(f'[Facebook] Hits count - {hits_count}')
 
         return hits_count

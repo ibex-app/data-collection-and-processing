@@ -197,7 +197,7 @@ def get_time_intervals(collect_action: CollectAction, monitor: Monitor, sample: 
 
     intervals = []
     if sample:
-        for i in range(10):
+        for i in range(5):
             rand_date = random_date_between(date_from, date_to - timedelta(hours=5))
             intervals.append((rand_date, rand_date + timedelta(hours=5)))
     else:

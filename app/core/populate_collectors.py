@@ -95,8 +95,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     for platform in Platform:
         collect_tasks_group = [collect_task for collect_task in collect_tasks if collect_task.platform == platform]
         if len(collect_tasks_group) == 0: continue
-
-        if False: 
+        # TODO determin if tasks can be run in parallel
+        if False:
             task_group.append(group([collect.s(serialize_to_base64(task)) for task in collect_tasks_group]))
         else:
             task_group.append(collect.map([serialize_to_base64(task) for task in collect_tasks_group]))
