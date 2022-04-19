@@ -52,7 +52,7 @@ class YoutubeCollector:
 
     async def collect(self, collect_task: CollectTask):
         params = self.generate_request_params(collect_task)
-        
+        self.log.success(f'[YouTube-params] {params}')
         posts_from_api = self._collect(params)
         posts = self.map_to_posts(posts_from_api, collect_task)
 
@@ -162,7 +162,7 @@ class YoutubeCollector:
                             image_url =         api_post['snippet']['thumbnails']['default']['url'],
                             url =               f'https://www.youtube.com/watch?v={api_post["id"]}',
                             platform =          Platform.youtube,
-                            monitor_ids =       [collect_task.monitor_id],
+                            # monitor_ids =       [collect_task.monitor_id],
                             api_dump =          dict(**api_post),
                             scores =            scores,
                             media_status =      MediaStatus.to_be_downloaded

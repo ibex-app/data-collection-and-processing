@@ -36,9 +36,8 @@ def collect(collect_task: str):
 
 async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: CollectTask):
     await init_mongo()
-    hits_count: List[Post] = await collector_method(collect_task)
+    hits_count: int = await collector_method(collect_task)
     collect_task_ = await CollectTask.find_one(CollectTask.id == collect_task.id)
-
     collect_task_.hits_count = hits_count
     collect_task_.sample = False
     await collect_task_.save()
@@ -60,6 +59,9 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
     # execute collect action
     collected_posts: List[Post] = await collector_method(collect_task)
     
+    for post in collected_posts:
+        post.monitor_ids = [collect_task.monitor_id]
+
     count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
 
     print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')

@@ -40,15 +40,15 @@ boolean_operators[Platform.youtube] = dict(
 )
 
 query_length_ = dict()
-query_length_[Platform.facebook] = 910
+query_length_[Platform.facebook] = 908
 # academic account
-query_length_[Platform.twitter] = 1024
+query_length_[Platform.twitter] = 1020
 # Full Archive
-query_length_[Platform.twitter] = 128
+query_length_[Platform.twitter] = 124
 # 30-Day
-query_length_[Platform.twitter] = 256
+query_length_[Platform.twitter] = 254
 
-query_length_[Platform.youtube] = 2000
+query_length_[Platform.youtube] = 1994
 
 def get_query_length(collect_action: CollectAction, accounts: List[Account]) -> int:
     query_length = query_length_[collect_action.platform]
@@ -87,7 +87,7 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
     operators = boolean_operators[collect_action.platform]
     query_length_for_platform = get_query_length(collect_action, accounts)
     
-
+    # print(f'terms --- {len(terms)}' )
     for keyword in terms:
         if ' OR ' not in keyword and ' AND ' not in keyword and ' NOT ' not in keyword:
             try:
@@ -96,7 +96,8 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
                 decls = [keyword]
             
             single_term = f'{operators["or_"]}'.join([f'"{word}"' for word in decls])
-
+            # print(f'decls --- {decls}' )
+            # print(f'single_term --- {single_term}' )
         else:
             words, statements = split_complex_query(keyword, operators)
 
@@ -117,14 +118,21 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
                     break 
         
         full_query_ = f'{ full_query }{operators["or_"]}({single_term})'
-        
-        if len(full_query_) > query_length_for_platform:
-            all_queries.append(full_query.lstrip(f' {operators["or_"]} '))
+
+        # print(f'full query ---{full_query}---')
+        # print(f'full query_ ---{full_query_}---')
+
+        if len(full_query_) > query_length_for_platform and full_query:
+            full_query_striped = full_query.lstrip(f' {operators["or_"]} ')
+            all_queries.append(full_query_striped)
+            # print(f'appending full_query_striped ---{full_query_striped}---')
             full_query = f'({single_term})'
         else:
             full_query = full_query_
 
-    all_queries.append(full_query.lstrip(f' {operators["or_"]} '))
+    full_query_striped = full_query.lstrip(f' {operators["or_"]} ')
+    # print(f'appending last full_query_striped ---{full_query_striped}---')
+    all_queries.append(full_query_striped)
 
     return all_queries
 
@@ -140,40 +148,42 @@ def split_sources(accounts:List[Account], collect_action: CollectAction):
 
     return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
 
-
+def split_queries_youtube(search_terms, collect_action, accounts):
+    terms = [search_term.term for search_term in search_terms]
+    replace_operators = lambda term: term.replace(' OR ', boolean_operators[Platform.youtube]["or_"]).replace(' AND ', boolean_operators[Platform.youtube]["and_"]).replace(' NOT ', boolean_operators[Platform.youtube]["not_"])
+    return [replace_operators(term) for term in terms]
 
 def split_to_tasks(accounts: List[Account], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
-    sub_queries = split_queries(search_terms, collect_action, accounts)[:5]
+    if collect_action.platform == Platform.youtube:
+        sub_queries = split_queries_youtube(search_terms, collect_action, accounts)
+    else:
+        sub_queries = split_queries(search_terms, collect_action, accounts)
     sub_accounts = split_sources(accounts, collect_action)
-    # print(accounts, search_terms, collect_action, date_from, date_to, sample)
-    # return []
+    print(f'{len(sub_queries)} sub queries created')
+    print(f'{len(sub_accounts)} sub accounts created')
+
     collect_tasks:List[CollectTask] = []
     
-    collect_task: CollectTask = CollectTask(
-        platform=collect_action.platform,
+    collect_task_dict = dict(platform=collect_action.platform,
         date_from=date_from,
         date_to=date_to,
         monitor_id=collect_action.monitor_id,
         sample=sample
     )
-    
+
     if len(sub_accounts) > 0 and len(sub_queries) > 0:
         for sub_account in sub_accounts:
             for sub_query in sub_queries:
-                collect_task_ = deepcopy(collect_task)
-                collect_task_.accounts = sub_account
-                collect_task_.query = sub_query
-                collect_tasks.append(collect_task_)
+                collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_account, query = sub_query)
+                collect_tasks.append(collect_task)
     elif len(sub_accounts) > 0:
         for sub_account in sub_accounts:
-            collect_task_ = deepcopy(collect_task)
-            collect_task_.accounts = sub_account
-            collect_tasks.append(collect_task_)
+            collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_account)
+            collect_tasks.append(collect_task)
     elif len(sub_queries) > 0:
          for sub_query in sub_queries:
-            collect_task_ = deepcopy(collect_task)
-            collect_task_.query = sub_query
-            collect_tasks.append(collect_task_)
+            collect_task: CollectTask = CollectTask(**collect_task_dict, query = sub_query)
+            collect_tasks.append(collect_task)
 
     return collect_tasks
 
@@ -190,14 +200,14 @@ def get_last_collection_date(collect_action: CollectAction):
 def get_time_intervals(collect_action: CollectAction, monitor: Monitor, sample: bool = False) -> List[Tuple[datetime, datetime]]:
     if sample:
         date_from = monitor.date_from
-        date_to = monitor.date_to
+        date_to = datetime.now()  - timedelta(hours=5) #monitor.date_to
     else:
         date_from = get_last_collection_date(collect_action)
         date_to = datetime.now()  - timedelta(hours=5)
 
     intervals = []
     if sample:
-        for i in range(10):
+        for i in range(5):
             rand_date = random_date_between(date_from, date_to - timedelta(hours=5))
             intervals.append((rand_date, rand_date + timedelta(hours=5)))
     else:
