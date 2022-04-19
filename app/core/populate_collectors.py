@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from typing import List
 
 from beanie.odm.operators.find.comparison import In
@@ -18,7 +19,6 @@ async def get_collector_tasks(monitor_id:UUID, sample: bool = False) -> List[cha
         await CollectTask.find(CollectTask.monitor_id == monitor_id).delete()
     
     monitor = await Monitor.find_one(Monitor.id == monitor_id)
-
     collect_actions: List[CollectAction] = await get_collect_actions(monitor_id)
     tasks_group: List[chain or group] = await to_tasks_group(collect_actions, monitor, sample)
     return tasks_group
@@ -58,16 +58,22 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         account: List[Account] = await get_accounts(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
 
-        
+        print(f'Using {len(account)} account(s)')
+        print(f'Using {len(search_terms)} search term(s)')
 
         # Generateing hits count task here
         if sample:
-            hits_count_tasks = split_to_tasks(account, search_terms, collect_action, monitor.date_from, monitor.date_to, sample)
+            # date_to = monitor.date_to or datetime.now()
+            # TODO end data if not None
+            date_to = datetime.now()
+            hits_count_tasks = split_to_tasks(account, search_terms, collect_action, monitor.date_from, date_to, sample)
             for hits_count_task in hits_count_tasks:
                 hits_count_task.get_hits_count = True
             collect_tasks += hits_count_tasks 
 
-        #Generating time intervals here, 
+            print(f'Generated {len(collect_tasks)} collect tasks for hits count')
+
+        # Generating time intervals here, 
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
         time_intervals = get_time_intervals(collect_action, monitor, sample)
@@ -81,6 +87,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
         for (date_from, date_to) in time_intervals:
             collect_tasks += split_to_tasks(account, search_terms, collect_action, date_from, date_to, sample)
+            print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
 
         if not sample: 
             ## Update last collection time 
@@ -91,6 +98,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         await CollectTask.insert_many(collect_tasks)
     
     print(f'{len(collect_tasks)} collect tasks created...')
+    # print(collect_tasks)
     # Create separate task groups for platforms, that groups can be executed in parallel 
     for platform in Platform:
         collect_tasks_group = [collect_task for collect_task in collect_tasks if collect_task.platform == platform]

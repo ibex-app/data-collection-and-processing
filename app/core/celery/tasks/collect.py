@@ -59,6 +59,9 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
     # execute collect action
     collected_posts: List[Post] = await collector_method(collect_task)
     
+    for post in collected_posts:
+        post.monitor_ids = [collect_task.monitor_id]
+
     count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
 
     print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')

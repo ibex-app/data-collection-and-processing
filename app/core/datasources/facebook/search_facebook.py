@@ -28,7 +28,7 @@ class FacebookCollector:
     @staticmethod
     @sleep_after(tag='Facebook')
     def _collect_posts_by_param(params):
-        res = requests.get("https://api.crowdtangle.com/posts", params=params).json()
+        res = requests.get("https://api.crowdtangle.com/posts/search", params=params).json()
         return res
 
     def generate_request_params(self, collect_task: CollectTask):
@@ -46,7 +46,8 @@ class FacebookCollector:
             params['searchTerm'] = collect_task.query
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
             params['accounts'] = ','.join([account.platform_id for account in collect_task.accounts])
-
+        
+        self.log.success(f'[Facebook] requests params has been generated: {params}.')
         return params
 
 
@@ -67,7 +68,9 @@ class FacebookCollector:
         while 'nextPage' in res["result"]["pagination"]:
             params["offset"] = self.max_posts_per_call_ * offset
             offset += 1
+            # self.log.info(f'[Facebook] params {params}')
             res = self._collect_posts_by_param(params)
+            # self.log.info(f'[Facebook] res {res}')
 
             if "result" not in res or "posts" not in res["result"]:
                 self.log.warn(f'[Facebook] result not present in api response, breaking loop..')
@@ -77,7 +80,6 @@ class FacebookCollector:
 
             if offset >= self.max_requests_:
                 self.log.success(f'[Facebook] limit of {self.max_requests}')
-                                #  f' requests has been reached for params: {params}.')
                 break
 
         if not len(results):
@@ -138,7 +140,7 @@ class FacebookCollector:
                              author_platform_id=api_post['account']['id'] if 'account' in api_post else None,
                              scores=scores,
                              api_dump=api_post,
-                             monitor_id=collect_task.monitor_id,
+                            #  monitor_id=collect_task.monitor_id,
                              url=url
                              )
         return post_doc

@@ -14,6 +14,8 @@ from app.config.mongo_config import init_mongo
 async def run_collector_tasks(monitor_id:UUID, sample:bool):
     await init_mongo()
     collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, sample)
+    if not collector_tasks:
+        return
     g = group(collector_tasks)
     g.delay().get()
 
@@ -21,6 +23,8 @@ async def run_collector_tasks(monitor_id:UUID, sample:bool):
 async def run_downloader_tasks(monitor_id:UUID):
     await init_mongo()
     downloader_tasks: List[xmap or group] = await get_downloader_tasks(monitor_id)
+    if not downloader_tasks:
+        return
     g = group(downloader_tasks)
     g.delay().get()
 
@@ -28,6 +32,8 @@ async def run_downloader_tasks(monitor_id:UUID):
 async def run_processor_tasks(monitor_id:UUID):
     await init_mongo()
     processor_tasks: List[xmap or group] = await get_processor_tasks(monitor_id)
+    if not processor_tasks:
+        return
     g = group(processor_tasks)
     g.delay().get()
 

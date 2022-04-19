@@ -47,7 +47,7 @@ async def insert_posts(collected_posts: List[Post], collect_task: CollectTask):
     count_inserts = 0
     count_updates = 0
     count_existed = 0
-
+    # TODO: Needs optimization, save_many can be used here
     #Deduplication step can be performed after posts are inserted, 
     if len(collected_posts):
         for post in collected_posts:
