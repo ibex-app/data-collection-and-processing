@@ -16,3 +16,4 @@ flower
 faker==2.8.2
 pytube==11.0.1
 scenecut_extractor==0.3.3
+telethon
