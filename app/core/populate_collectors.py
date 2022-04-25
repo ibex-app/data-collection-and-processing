@@ -66,17 +66,20 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
             # date_to = monitor.date_to or datetime.now()
             # TODO end data if not None
             date_to = datetime.now()
-            hits_count_tasks = split_to_tasks(account, search_terms, collect_action, monitor.date_from, date_to, sample)
-            for hits_count_task in hits_count_tasks:
-                hits_count_task.get_hits_count = True
-            collect_tasks += hits_count_tasks 
+            
+            # Generating hits count task for each search term
+            for search_term in search_terms:
+                hits_count_tasks = split_to_tasks(account, [search_term], collect_action, monitor.date_from, date_to, sample)
+                for hits_count_task in hits_count_tasks:
+                    hits_count_task.get_hits_count = True
+            collect_tasks += hits_count_tasks
 
-            print(f'Generated {len(collect_tasks)} collect tasks for hits count')
+            print(f'Generated {len(hits_count_tasks)} collect tasks for hits count')
 
         # Generating time intervals here, 
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
-        time_intervals = get_time_intervals(collect_action, monitor, sample)
+        time_intervals = get_time_intervals(collect_action, monitor, 3, sample)
         # [2021-01-01    -  2021-03-01]
 
         # [2021-01-07    -  2021-01-07,
@@ -89,6 +92,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
             collect_tasks += split_to_tasks(account, search_terms, collect_action, date_from, date_to, sample)
             print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
 
+        # TODO move this into point when data collection is finalized
         if not sample: 
             ## Update last collection time 
             collect_action.last_collection_date = time_intervals[-1][1]

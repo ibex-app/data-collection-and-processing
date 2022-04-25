@@ -58,6 +58,7 @@ def get_query_length(collect_action: CollectAction, accounts: List[Account]) -> 
     
     return query_length
 
+
 def split_complex_query(keyword, operators):
     words = []
     statements = []
@@ -75,6 +76,7 @@ def split_complex_query(keyword, operators):
                 words.append(not_split)
 
     return words, statements
+
 
 def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, accounts: List[Account]):
     terms:List[str] = [search_term.term for search_term in search_terms]
@@ -148,16 +150,19 @@ def split_sources(accounts:List[Account], collect_action: CollectAction):
 
     return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
 
+
 def split_queries_youtube(search_terms, collect_action, accounts):
     terms = [search_term.term for search_term in search_terms]
     replace_operators = lambda term: term.replace(' OR ', boolean_operators[Platform.youtube]["or_"]).replace(' AND ', boolean_operators[Platform.youtube]["and_"]).replace(' NOT ', boolean_operators[Platform.youtube]["not_"])
     return [replace_operators(term) for term in terms]
+
 
 def split_to_tasks(accounts: List[Account], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
     if collect_action.platform == Platform.youtube:
         sub_queries = split_queries_youtube(search_terms, collect_action, accounts)
     else:
         sub_queries = split_queries(search_terms, collect_action, accounts)
+
     sub_accounts = split_sources(accounts, collect_action)
     print(f'{len(sub_queries)} sub queries created')
     print(f'{len(sub_accounts)} sub accounts created')
@@ -197,7 +202,7 @@ def get_last_collection_date(collect_action: CollectAction):
     return collect_action.last_collection_date 
 
 
-def get_time_intervals(collect_action: CollectAction, monitor: Monitor, sample: bool = False) -> List[Tuple[datetime, datetime]]:
+def get_time_intervals(collect_action: CollectAction, monitor: Monitor, number_of_intervals:int = 5, sample: bool = False) -> List[Tuple[datetime, datetime]]:
     if sample:
         date_from = monitor.date_from
         date_to = datetime.now()  - timedelta(hours=5) #monitor.date_to
@@ -207,7 +212,7 @@ def get_time_intervals(collect_action: CollectAction, monitor: Monitor, sample: 
 
     intervals = []
     if sample:
-        for i in range(5):
+        for i in range(number_of_intervals):
             rand_date = random_date_between(date_from, date_to - timedelta(hours=5))
             intervals.append((rand_date, rand_date + timedelta(hours=5)))
     else:
