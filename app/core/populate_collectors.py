@@ -68,12 +68,21 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
             date_to = datetime.now()
             
             # Generating hits count task for each search term
+            hits_count_tasks = []
             for search_term in search_terms:
-                hits_count_tasks = split_to_tasks(account, [search_term], collect_action, monitor.date_from, date_to, sample)
-                for hits_count_task in hits_count_tasks:
+                hits_count_tasks_ = split_to_tasks(account, [search_term], collect_action, monitor.date_from, date_to, sample)
+                
+                for hits_count_task in hits_count_tasks_:
                     hits_count_task.get_hits_count = True
-            collect_tasks += hits_count_tasks
+                    hits_count_task.search_terms = [search_term]
 
+                hits_count_tasks += hits_count_tasks_
+
+            if len(hits_count_tasks):
+                await CollectTask.insert_many(hits_count_tasks)
+
+            collect_tasks += hits_count_tasks
+            
             print(f'Generated {len(hits_count_tasks)} collect tasks for hits count')
 
         # Generating time intervals here, 
@@ -98,8 +107,6 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
             collect_action.last_collection_date = time_intervals[-1][1]
             await collect_action.save()
 
-    if sample and len(collect_tasks):
-        await CollectTask.insert_many(collect_tasks)
     
     print(f'{len(collect_tasks)} collect tasks created...')
     # print(collect_tasks)

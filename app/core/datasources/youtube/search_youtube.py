@@ -65,8 +65,12 @@ class YoutubeCollector:
         params = self.generate_request_params(collect_task)
 
         res = self._youtube_search(params).json()
+        
+        # self.log.info(f'[YouTube] Hits count params - {params}')
+        # self.log.info(f'[YouTube] Hits count res - {res}')
 
         hits_count = res['pageInfo']['totalResults']
+        
         self.log.info(f'[YouTube] Hits count - {hits_count}')
 
         return hits_count

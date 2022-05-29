@@ -37,7 +37,8 @@ def collect(collect_task: str):
 async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: CollectTask):
     await init_mongo()
     hits_count: int = await collector_method(collect_task)
-    collect_task_ = await CollectTask.find_one(CollectTask.id == collect_task.id)
+    collect_task_ = await CollectTask.get(collect_task.id)
+
     collect_task_.hits_count = hits_count
     collect_task_.sample = False
     await collect_task_.save()
