@@ -6,6 +6,7 @@ from typing import List, Dict
 from ibex_models import Post, Scores, CollectTask, Platform, Account
 from app.core.datasources.datasource import Datasource
 
+
 class TelegramCollector(Datasource):
     """The class for data collection from TelegramClient.
 
@@ -165,43 +166,33 @@ class TelegramCollector(Datasource):
             except ValueError as e:
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
-    def generate_params(self, query:str):
-        params = dict(
-            limit=5,
-        )
-        if query is not None and len(query) > 0:
-            params['q'] = query
 
-        return params
 
     async def get_accounts(self, query: str) -> List[Account]:
-        # Dict variable for generated meta data.
-        params = self.generate_params(query)
-
         # Variable for TelegramClient instance
         client = TelegramClient('username', self.id, self.hash)
         await client.start()
 
 
         dialogs = await client(functions.contacts.SearchRequest(
-            q=params['q'],
-            limit=params['limit'],
+            q=query,
+            limit=5,
         ))
 
         # List variable for all accounts data.
         accounts = self.map_to_accounts(dialogs.chats)
-
         return accounts
+
 
     def map_to_accounts(self, accounts: List) -> List[Account]:
         """The method is responsible for mapping data redudned by plarform api
-                   into Account class.
-               Args:
-                   accounts: responce from platform API.
-                   collect_action(CollectTask): the metadata used for data collection task.
-               Returns:
-                   (Account): class derived from API data.
-               """
+            into Account class.
+        Args:
+            accounts: responce from platform API.
+            collect_action(CollectTask): the metadata used for data collection task.
+        Returns:
+            (Account): class derived from API data.
+        """
         result: List[Account] = []
         for account in accounts:
             try:
