@@ -176,26 +176,6 @@ class VKCollector(Datasource):
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
 
-    def generate_params(self, query):
-        """ The method is responsible for generating params
-        Args:
-            collect_action(CollectTask): CollectTask object holds
-                all the metadata.
-        """
-        collect_task = CollectTask(date_from=datetime(2022, 4, 1), date_to=datetime(2022, 4, 10))
-        params = dict(
-            access_token=self.token,
-            limit=5,
-            fields=[''],
-            v=5.82,
-        )
-
-        if query is not None and len(query) > 0:
-            params['q'] = query
-        if collect_task.accounts is not None and len(collect_task.accounts) > 0:
-            params['groups'] = ','.join([account.platform_id for account in collect_task.accounts])
-        return params
-
     def get_acc(self, params: Dict):
         """ The method is responsible for actual get of data
         Args:
@@ -207,6 +187,7 @@ class VKCollector(Datasource):
 
         # Variable for data returned from request
         req = requests.get(url, params)
+        print(req.json())
         return req.json()['response']['items']
 
     # @abstractmethod
@@ -220,7 +201,13 @@ class VKCollector(Datasource):
               (List[Account]): List of collected accounts.
           """
         # parameter for generated metadata
-        params = self.generate_params(query)
+        params = dict(
+            access_token=self.token,
+            limit=5,
+            fields=[''],
+            v=5.82,
+            q=query
+        )
 
         # list of posts returned by method
         results: List[any] = self.get_acc(params)
@@ -247,7 +234,7 @@ class VKCollector(Datasource):
                 print({collect_task.platform}, e)
         return result
 
-    def map_to_acc(self, acc: Account, collect_task: CollectTask) -> Account:
+    def map_to_acc(self, acc: Account) -> Account:
         group_id = ''
         group_name = ''
         group_photo = ''

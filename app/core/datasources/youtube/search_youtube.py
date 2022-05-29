@@ -193,9 +193,8 @@ class YoutubeCollector:
             q=query
         )
         req_url = "https://www.googleapis.com/youtube/v3/search"
-        print(params)
+
         res = requests.get(req_url, params)
-        print(res.json())
         acc = res.json()['items']
         accounts = self.map_to_accounts(acc)
 
