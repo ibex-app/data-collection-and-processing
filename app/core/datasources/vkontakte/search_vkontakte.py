@@ -1,7 +1,7 @@
 import os
 import requests
 from typing import List, Dict
-from ibex_models import Post, Scores, CollectTask, Platform
+from ibex_models import Post, Scores, CollectTask, Platform, Account
 from datetime import datetime
 from app.core.datasources.datasource import Datasource
 
@@ -176,3 +176,98 @@ class VKCollector(Datasource):
             except ValueError as e:
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
+
+    def generate_params(self, query):
+        """ The method is responsible for generating params
+        Args:
+            collect_action(CollectTask): CollectTask object holds
+                all the metadata.
+        """
+        collect_task = CollectTask(date_from=datetime(2022, 4, 1), date_to=datetime(2022, 4, 10))
+        params = dict(
+            access_token=self.token,
+            limit=5,
+            fields=[''],
+            v=5.82,
+        )
+
+        if query is not None and len(query) > 0:
+            params['q'] = query
+        if collect_task.accounts is not None and len(collect_task.accounts) > 0:
+            params['groups'] = ','.join([account.platform_id for account in collect_task.accounts])
+        return params
+
+    def get_acc(self, params: Dict):
+        """ The method is responsible for actual get of data
+        Args:
+            params - Generated dictionary with all needed metadata.
+        """
+
+        # Url string for request
+        url = f"https://api.vk.com/method/search.getHints"
+
+        # Variable for data returned from request
+        req = requests.get(url, params)
+        return req.json()['response']['items']
+
+    # @abstractmethod
+    async def get_accounts(self, query) -> List[Account]:
+        """The method is responsible for collecting Accounts
+              from platforms.
+          Args:
+              collect_action(CollectTask): CollectTask object holds
+                  all the metadata needed for data collection.
+          Returns:
+              (List[Account]): List of collected accounts.
+          """
+        # parameter for generated metadata
+        params = self.generate_params(query)
+
+        # list of posts returned by method
+        results: List[any] = self.get_acc(params)
+
+        # list of accounts with type of Account for every element
+        accounts = self.map_to_accounts(results, params)
+        return accounts
+
+    def map_to_accounts(self, accounts: List, collect_task: CollectTask) -> List[Account]:
+        """The method is responsible for mapping data redudned by plarform api
+                   into Account class.
+               Args:
+                   accounts: responce from platform API.
+                   collect_action(CollectTask): the metadata used for data collection task.
+               Returns:
+                   (Account): class derived from API data.
+               """
+        result: List[Account] = []
+        for account in accounts:
+            try:
+                account = self.map_to_acc(account, collect_task)
+                result.append(account)
+            except ValueError as e:
+                print({collect_task.platform}, e)
+        return result
+
+    def map_to_acc(self, acc: Account, collect_task: CollectTask) -> Account:
+        group_id = ''
+        group_name = ''
+        group_photo = ''
+        group_url = ''
+        if 'group' in str(acc):
+            group_id = acc['group']['id']
+            group_photo = acc['group']['photo_100']
+            group_name = acc['group']['name']
+            group_url = acc['group']['screen_name']
+        if 'profile' in str(acc):
+            group_id = acc['profile']['id']
+            group_photo = acc['profile']['first_name']
+            group_name = ''
+            group_url = ''
+        mapped_account = Account(
+            title=group_name,
+            url='vk.com/' + group_url,
+            platform=Platform.vkontakte,
+            platform_id=group_id,
+            img=group_photo
+        )
+        return mapped_account
