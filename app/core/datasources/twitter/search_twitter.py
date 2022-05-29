@@ -16,7 +16,8 @@ import pandas as pd
 # import os
 from itertools import chain
 import json
-
+from requests_oauthlib import OAuth1
+import requests
 from ibex_models import Account, CollectTask, Platform, Post, Scores, SearchTerm
 
 
@@ -70,7 +71,7 @@ class UserFields(Enum):
 
 @slf
 class TwitterCollector:
-    yaml_path = "app/core/datasources/twitter/.twitter_keys.yaml"
+    yaml_path = "/root/data-collection-and-processing/app/core/datasources/twitter/.twitter_keys.yaml"
     # yaml_path = ".twitter_keys.yaml"
 
     def __init__(self, *args, **kwargs):
@@ -276,7 +277,60 @@ class TwitterCollector:
                 self.log.error(f'[Twitter] {e}')
         return posts
 
+    async def get_accounts(self, query) -> List[Account]:
+        """The method is responsible for collecting Accounts
+              from platforms.
+          Args:
+              collect_action(CollectTask): CollectTask object holds
+                  all the metadata needed for data collection.
+          Returns:
+              (List[Account]): List of collected accounts.
+          """
+        # parameter for generated metadata
+        API_KEY = os.getenv('TWITTER_API_KEY')
+        API_SECRET = os.getenv('TWITTER_API_SECRET')
+        ACCESS_TOKEN = os.getenv('TWITTER_ACCESS_TOKEN')
+        ACCESS_TOKEN_SECRET = os.getenv('TWITTER_ACCESS_TOKEN_SECRET')
+        url = 'https://api.twitter.com/1.1/account/verify_credentials.json'
+        auth = OAuth1(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+        requests.get(url, auth=auth)
+        params = dict(q=query)
+        r = requests.get('https://api.twitter.com/1.1/users/search.json', params, auth=auth)
+        
+        # list of posts returned by method
+        results: List[any] = r.json()
 
+        # list of accounts with type of Account for every element
+        accounts = self.map_to_accounts(results)
+        return accounts
+
+    def map_to_accounts(self, accounts: List) -> List[Account]:
+        """The method is responsible for mapping data redudned by plarform api
+                   into Account class.
+               Args:
+                   accounts: responce from platform API.
+                   collect_action(CollectTask): the metadata used for data collection task.
+               Returns:
+                   (Account): class derived from API data.
+               """
+        result: List[Account] = []
+        for account in accounts:
+            try:
+                account = self.map_to_acc(account)
+                result.append(account)
+            except ValueError as e:
+                print(e)
+        return result
+
+    def map_to_acc(self, acc: any) -> Account:
+        mapped_account = Account(
+            title=acc['screen_name'],
+            url=acc['screen_name'],
+            platform=Platform.twitter,
+            platform_id=acc['id_str'],
+            img=acc['profile_image_url_https']
+        )
+        return mapped_account
 
 # async def test():
 #     from app.config.mongo_config import init_mongo

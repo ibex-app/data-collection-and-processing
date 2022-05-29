@@ -3,7 +3,7 @@ from ibex_models import Post, CollectTask
 from abc import ABC, abstractmethod
 
 
-class Collector(ABC):
+class Datasource(ABC):
     """The abstract class for data collectors.
         
         All data collectors/data sources implement 
@@ -42,8 +42,8 @@ class Collector(ABC):
         """
         pass
     
+    # @staticmethod
     @abstractmethod
-    @staticmethod
     def map_to_post(api_post: Dict, collect_task: CollectTask) -> Post:
         """The method is responsible for mapping data redudned by plarform api
             into Post class.

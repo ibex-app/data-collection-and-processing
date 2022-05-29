@@ -65,12 +65,8 @@ class YoutubeCollector:
         params = self.generate_request_params(collect_task)
 
         res = self._youtube_search(params).json()
-        
-        # self.log.info(f'[YouTube] Hits count params - {params}')
-        # self.log.info(f'[YouTube] Hits count res - {res}')
 
         hits_count = res['pageInfo']['totalResults']
-        
         self.log.info(f'[YouTube] Hits count - {hits_count}')
 
         return hits_count
@@ -185,6 +181,47 @@ class YoutubeCollector:
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
 
+
+    
+    async def get_accounts(self, query:str)-> List[Account]:
+        params = dict(
+            part='snippet',
+            maxResults=5,
+            key=self.token,
+            order='relevance',
+            type='channel',
+            q=query
+        )
+        req_url = "https://www.googleapis.com/youtube/v3/search"
+        print(params)
+        res = requests.get(req_url, params)
+        print(res.json())
+        acc = res.json()['items']
+        accounts = self.map_to_accounts(acc)
+
+        return accounts
+
+    def map_to_accounts(self, accounts: List) -> List[Account]:
+        result: List[Account] = []
+        for account in accounts:
+            try:
+                account = self.map_to_acc(account)
+                result.append(account)
+            except ValueError as e:
+                print("Youtube", e)
+        return result
+
+    def map_to_acc(self, acc: Account) -> Account:
+        mapped_account = Account(
+            title=acc['snippet']['channelTitle'],
+            tags=[acc['etag']],
+            img=acc['snippet']['thumbnails']['default']['url'],
+            url='',
+            platform=Platform.youtube,
+            platform_id=acc['id']['channelId'],
+            broadcasting_start_time=acc['snippet']['publishTime'],
+        )
+        return mapped_account
 
 
 # async def test():
