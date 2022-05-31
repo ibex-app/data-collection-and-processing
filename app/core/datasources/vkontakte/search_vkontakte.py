@@ -17,10 +17,12 @@ class VKCollector(Datasource):
         # TODO: double check the limit per post
 
         # Variable for maximum number of posts per request
-        self.max_posts_per_call = 10
+        self.max_posts_per_call = 50
+        self.max_posts_per_call_sample = 20
 
         # Variable for maximum number of requests
-        self.max_requests = 20
+        self.max_requests = 1
+        self.max_requests_sample = 50
 
     def get_posts_by_params(self, params: Dict):
 
@@ -36,21 +38,24 @@ class VKCollector(Datasource):
         # iterator for checking maximum call of requests.
         post_iterator = 0
         while has_next:
+            posts = posts + data['items']
+            post_iterator += 1
+
             if 'next_from' not in data.keys():
-                has_next = False
-                posts = posts + data['items']
-                return posts
-            else:
-                post_iterator += 1
-                data = self.get_posts(params, data['next_from'])
-                posts = posts + data['items']
-            if post_iterator > 20:
+                print(f'[VKontakte] all end of a list been reached')
                 break
+            
+            if post_iterator > self.max_requests_:
+                print(f'[VKontakte] limit of {self.max_requests_} have been reached')
+                break
+
+            data = self.get_posts(params, data['next_from'])
+
         return posts
+
 
     def get_posts(self, params: Dict,  next_from=None):
         """ The method is responsible for actual get of data
-
         Args:
             params - Generated dictionary with all needed metadata
             next_from - Parameter for checking next portion of posts existence
@@ -65,18 +70,19 @@ class VKCollector(Datasource):
 
         # Variable for data returned from request
         req = requests.get(url, params)
+        
         return req.json()['response']
+
 
     def generate_req_params(self, collect_task: CollectTask):
         """ The method is responsible for generating params
-
         Args:
             collect_action(CollectTask): CollectTask object holds
                 all the metadata.
         """
         params = dict(
             access_token=self.token,
-            count=self.max_posts_per_call,
+            count=self.max_posts_per_call_,
             fields=['city', 'connections', 'counters', 'country', 'domain', 'exports', 'followers_count', 'has_photo', 'home_town', 'interests', 'is_no_index', 'first_name','last_name', 'deactivated', 'is_closed', 'military','nickname', 'personal', 'photo_50','relatives', 'schools','screen_name', 'sex', 'timezone', 'verified', 'wall_default', 'next_from'],
             start_time=int(collect_task.date_from.strftime('%s')),
             end_time=int(collect_task.date_to.strftime('%s')),
@@ -87,21 +93,20 @@ class VKCollector(Datasource):
             params['q'] = collect_task.query
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
             params['groups'] = ','.join([account.platform_id for account in collect_task.accounts])
-
         return params
 
-    # @abstractmethod
+
     async def collect(self, collect_task: CollectTask) -> List[Post]:
         """The method is responsible for collecting posts
             from platforms.
-
         Args:
             collect_action(CollectTask): CollectTask object holds
                 all the metadata needed for data collection.
-
         Returns:
             (List[Post]): List of collected posts.
         """
+        self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
+        self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
         # parameter for generated metadata
         params = self.generate_req_params(collect_task)
@@ -110,45 +115,39 @@ class VKCollector(Datasource):
         results: List[any] = self.get_posts_by_params(params)
 
         # list of posts with type of Post for every element
-        posts = self._map_to_posts(results, params)
-
+        posts = self.map_to_posts(results, params)
         return posts
 
-    # @abstractmethod
+
     async def get_hits_count(self, collect_task: CollectTask) -> int:
         """The method is responsible for collecting the number of posts,
             that satisfy all criterias in CollectTask object.
-
         Note:
             Do not collect actual posts here, this method is only
             applicable to platforms that provide this kind of information.
-
         Args:
             collect_action(CollectTask): CollectTask object holds
                 all the metadata needed for data collection.
-
         Returns:
             (int): Number of posts existing on the platform.
         """
         params = self.generate_req_params(collect_task)  # parameters for generated metadata
         return self.get_posts(params)['total_count']
 
-    # @abstractmethod
-    # @staticmethod
+
     def map_to_post(self, api_post: Dict, collect_task: CollectTask) -> Post:
         """The method is responsible for mapping data redudned by plarform api
             into Post class.
-
         Args:
             api_post: responce from platform API.
             collect_action(CollectTask): the metadata used for data collection task.
-
         Returns:
             (Post): class derived from API data.
         """
+        # print(api_post)
         scores = Scores(
-            likes=api_post['likes']['count'],
-            shares=api_post['reposts']['count'],
+            likes= 0 if not 'likes' in api_post else api_post['likes']['count'],
+            shares=0 if not 'reposts' in api_post else api_post['reposts']['count'],
         )
         post_doc = Post(title=api_post['title'] if 'title' in api_post else "",
                         text=api_post['text'] if 'text' in api_post else "",
@@ -163,8 +162,8 @@ class VKCollector(Datasource):
                         )
         return post_doc
 
-    # @abstractmethod
-    def _map_to_posts(self, posts: List[Dict], collect_task: CollectTask):
+
+    def map_to_posts(self, posts: List[Dict], collect_task: CollectTask):
 
         # Variable for collecting posts in one List with type of Post for each element.
         res: List[Post] = []
@@ -177,26 +176,6 @@ class VKCollector(Datasource):
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
 
-    def generate_params(self, query):
-        """ The method is responsible for generating params
-        Args:
-            collect_action(CollectTask): CollectTask object holds
-                all the metadata.
-        """
-        collect_task = CollectTask(date_from=datetime(2022, 4, 1), date_to=datetime(2022, 4, 10))
-        params = dict(
-            access_token=self.token,
-            limit=5,
-            fields=[''],
-            v=5.82,
-        )
-
-        if query is not None and len(query) > 0:
-            params['q'] = query
-        if collect_task.accounts is not None and len(collect_task.accounts) > 0:
-            params['groups'] = ','.join([account.platform_id for account in collect_task.accounts])
-        return params
-
     def get_acc(self, params: Dict):
         """ The method is responsible for actual get of data
         Args:
@@ -208,6 +187,7 @@ class VKCollector(Datasource):
 
         # Variable for data returned from request
         req = requests.get(url, params)
+        print(req.json())
         return req.json()['response']['items']
 
     # @abstractmethod
@@ -221,7 +201,13 @@ class VKCollector(Datasource):
               (List[Account]): List of collected accounts.
           """
         # parameter for generated metadata
-        params = self.generate_params(query)
+        params = dict(
+            access_token=self.token,
+            limit=5,
+            fields=[''],
+            v=5.82,
+            q=query
+        )
 
         # list of posts returned by method
         results: List[any] = self.get_acc(params)
@@ -248,7 +234,7 @@ class VKCollector(Datasource):
                 print({collect_task.platform}, e)
         return result
 
-    def map_to_acc(self, acc: Account, collect_task: CollectTask) -> Account:
+    def map_to_acc(self, acc: Account) -> Account:
         group_id = ''
         group_name = ''
         group_photo = ''

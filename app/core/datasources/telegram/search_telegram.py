@@ -13,6 +13,7 @@ class TelegramCollector(Datasource):
         All data collectors/data sources implement
         methods described below.
     """
+
     def __init__(self, *args, **kwargs):
         # hash parameter for authorization.
         self.hash = os.getenv('TELEGRAM_HASH')
@@ -62,7 +63,6 @@ class TelegramCollector(Datasource):
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
         await self.connect()
-       
 
         dialog_name = ''
         if collect_task.accounts and collect_task.accounts[0]:
@@ -102,13 +102,11 @@ class TelegramCollector(Datasource):
             if requests_count >= self.max_requests_:
                 print(f'[Telegram] limit of {self.max_requests_} have been reached')
                 break
-
-            
+        
         maped_posts = self.map_to_posts(posts, collect_task)
         print(f'[Telegram] {len(maped_posts)} posts collected from dialog: {dialog_name}')
         
         await self.client.disconnect()
-
         return maped_posts
 
 
@@ -198,14 +196,13 @@ class TelegramCollector(Datasource):
         result: List[Account] = []
         for account in accounts:
             try:
-                account = self.map_to_acc(account)
+                account = self.map_to_account(account)
                 result.append(account)
             except ValueError as e:
                 print("Telegram", e)
         return result
 
-
-    def map_to_acc(self, acc: Account) -> Account:
+    def map_to_account(self, acc: Account) -> Account:
         mapped_account = Account(
             title=acc.title,
             url='t.me/'+acc.username,
