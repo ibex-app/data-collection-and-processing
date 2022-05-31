@@ -4,6 +4,7 @@ from typing import List, Dict
 from ibex_models import Post, Scores, CollectTask, Platform, Account
 from datetime import datetime
 from app.core.datasources.datasource import Datasource
+import vk_api
 
 class VKCollector(Datasource):
     """The class for data collection from VKontakte.
@@ -14,6 +15,8 @@ class VKCollector(Datasource):
 
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('VK_TOKEN')
+        self.username = os.getenv('VK_USER')
+        self.password = os.getenv('VK_PASS')
         # TODO: double check the limit per post
 
         # Variable for maximum number of posts per request
@@ -23,6 +26,24 @@ class VKCollector(Datasource):
         # Variable for maximum number of requests
         self.max_requests = 1
         self.max_requests_sample = 50
+
+    
+    def regenerate_token(self):
+        vk_session = vk_api.VkApi(self.username, self.password)
+        vk_session.auth()
+        os.environ["VK_TOKEN"] = vk_session.token['access_token']
+        self.token = os.getenv('VK_TOKEN')
+
+
+    def call_api(self, url, params):
+        req = requests.get(url, params)
+        if 'responce' not in req.json():
+            self.regenerate_token()
+            params['access_token'] = self.token
+            req = requests.get(url, params)
+
+        return req.json()['response']
+
 
     def get_posts_by_params(self, params: Dict):
 
@@ -65,13 +86,8 @@ class VKCollector(Datasource):
         else:
             params['start_from'] = next_from
 
-        # Url string for request
-        url = f"https://api.vk.com/method/newsfeed.search"
-
-        # Variable for data returned from request
-        req = requests.get(url, params)
-        
-        return req.json()['response']
+        posts =  self.call_api("https://api.vk.com/method/newsfeed.search", params)        
+        return posts
 
 
     def generate_req_params(self, collect_task: CollectTask):
@@ -176,20 +192,6 @@ class VKCollector(Datasource):
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
 
-    def get_acc(self, params: Dict):
-        """ The method is responsible for actual get of data
-        Args:
-            params - Generated dictionary with all needed metadata.
-        """
-
-        # Url string for request
-        url = f"https://api.vk.com/method/search.getHints"
-
-        # Variable for data returned from request
-        req = requests.get(url, params)
-        print(req.json())
-        return req.json()['response']['items']
-
     # @abstractmethod
     async def get_accounts(self, query) -> List[Account]:
         """The method is responsible for collecting Accounts
@@ -208,15 +210,15 @@ class VKCollector(Datasource):
             v=5.82,
             q=query
         )
-
-        # list of posts returned by method
-        results: List[any] = self.get_acc(params)
+        
+        results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)['items']
 
         # list of accounts with type of Account for every element
-        accounts = self.map_to_accounts(results, params)
+        accounts = self.map_to_accounts(results)
         return accounts
 
-    def map_to_accounts(self, accounts: List, collect_task: CollectTask) -> List[Account]:
+
+    def map_to_accounts(self, accounts: List[any]) -> List[Account]:
         """The method is responsible for mapping data redudned by plarform api
                    into Account class.
                Args:
@@ -228,25 +230,26 @@ class VKCollector(Datasource):
         result: List[Account] = []
         for account in accounts:
             try:
-                account = self.map_to_acc(account, collect_task)
+                account = self.map_to_acc(account)
                 result.append(account)
             except ValueError as e:
-                print({collect_task.platform}, e)
+                print({Platform.vkontakte}, e)
         return result
 
-    def map_to_acc(self, acc: Account) -> Account:
+
+    def map_to_acc(self, api_acc: any) -> Account:
         group_id = ''
         group_name = ''
         group_photo = ''
         group_url = ''
-        if 'group' in str(acc):
-            group_id = acc['group']['id']
-            group_photo = acc['group']['photo_100']
-            group_name = acc['group']['name']
-            group_url = acc['group']['screen_name']
-        if 'profile' in str(acc):
-            group_id = acc['profile']['id']
-            group_photo = acc['profile']['first_name']
+        if 'group' in str(api_acc):
+            group_id = api_acc['group']['id']
+            group_photo = api_acc['group']['photo_100']
+            group_name = api_acc['group']['name']
+            group_url = api_acc['group']['screen_name']
+        if 'profile' in str(api_acc):
+            group_id = api_acc['profile']['id']
+            group_photo = api_acc['profile']['first_name']
             group_name = ''
             group_url = ''
         mapped_account = Account(
