@@ -38,7 +38,9 @@ async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: C
     await init_mongo()
     hits_count: int = await collector_method(collect_task)
     collect_task_ = await CollectTask.get(collect_task.id)
-
+    if not collect_task_: 
+        print(f'collect_task was not found for {collect_task.platform}, {collect_task.id}')
+        return
     collect_task_.hits_count = hits_count
     collect_task_.sample = False
     await collect_task_.save()

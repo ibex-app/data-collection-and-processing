@@ -172,12 +172,12 @@ class VKCollector(Datasource):
                         text=api_post['text'] if 'text' in api_post else "",
                         created_at=api_post['date'] if 'date' in api_post else datetime.now(),
                         platform=Platform.vkontakte,
-                        platform_id=api_post['from_id'],
-                        author_platform_id=api_post['owner_id'] if 'owner_id' in api_post else None,
+                        platform_id=api_post['id'],
+                        author_platform_id=api_post['owner_id'],
                         scores=scores,
                         api_dump=api_post,
                         monitor_id=api_post['id'],
-                        # url=url,
+                        url=f'https://vk.com/wall{api_post["owner_id"]}_{api_post["id"]}',
                         )
         return post_doc
 

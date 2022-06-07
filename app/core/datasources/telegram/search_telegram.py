@@ -151,8 +151,8 @@ class TelegramCollector(Datasource):
                             scores=scores,
                             api_dump=dict({"dump": str(api_post)}),
                             monitor_id=api_post.id,
-                            # url=url,
-                            )
+                            url=f'https://t.me/c/{api_post.peer_id.channel_id}/{api_post.from_id if api_post.from_id is not None else ""}'  if 'channel_id' in str(api_post) else None,
+                    )
         except Exception as exc:
             print(exc)
         return post_doc
