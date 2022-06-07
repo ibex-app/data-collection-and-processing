@@ -5,7 +5,9 @@ from ibex_models import Post, Scores, CollectTask, Platform, Account
 from datetime import datetime
 from app.core.datasources.datasource import Datasource
 import vk_api
+from app.config.aop_config import slf, sleep_after
 
+@slf
 class VKCollector(Datasource):
     """The class for data collection from VKontakte.
 

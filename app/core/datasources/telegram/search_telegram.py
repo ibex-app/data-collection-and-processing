@@ -5,8 +5,9 @@ from telethon import functions, types
 from typing import List, Dict
 from ibex_models import Post, Scores, CollectTask, Platform, Account
 from app.core.datasources.datasource import Datasource
+from app.config.aop_config import slf, sleep_after
 
-
+@slf
 class TelegramCollector(Datasource):
     """The class for data collection from TelegramClient.
 
