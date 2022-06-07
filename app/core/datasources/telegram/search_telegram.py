@@ -170,17 +170,18 @@ class TelegramCollector(Datasource):
 
     async def get_accounts(self, query: str) -> List[Account]:
         # Variable for TelegramClient instance
-        client = TelegramClient('username', self.id, self.hash)
-        await client.start()
+        self.client = TelegramClient('username', self.id, self.hash)
+        await self.client.connect()   
 
 
-        dialogs = await client(functions.contacts.SearchRequest(
+        dialogs = await self.client(functions.contacts.SearchRequest(
             q=query,
             limit=5,
         ))
 
         # List variable for all accounts data.
         accounts = self.map_to_accounts(dialogs.chats)
+        await self.client.disconnect()
         return accounts
 
 

@@ -16,6 +16,8 @@ from app.core.datasources.utils import update_hits_count
 class FacebookCollector:
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('CROWDTANGLE_TOKEN')
+        self.app_id = os.getenv('FB_APP_ID')
+        self.app_secret = os.getenv('FB_APP_SECRET')
 
         # TODO: double check the limit per post
         self.max_posts_per_call = 100
@@ -158,19 +160,25 @@ class FacebookCollector:
 
 
     async def get_accounts(self, query) -> List[Account]:
-        params = self.generate_acc_req_params(query)
-        res = requests.get("https://graph.facebook.com/pages/search", params)
-        acc = res.json()['items']
-        accounts = self.map_to_accounts(acc, query)
+        params = dict(
+            client_id=self.app_id,
+            client_secret=self.app_secret,
+            grant_type='client_credentials'
+        )
+
+        access_token = requests.get("https://graph.facebook.com/oauth/access_token", params=params).json()['access_token']
+
+        params = dict(
+            fields='id,name,location,link',
+            access_token=access_token,
+            q=query
+        )
+
+        api_accounts = requests.get("https://graph.facebook.com/pages/search?q=Facebook", params=params).json()
+        
+        accounts = self.map_to_accounts(api_accounts['data'])
         return accounts
 
-    def generate_acc_req_params(self, query: str):
-        params = dict(
-            q=query,
-            fields=['id', 'name', 'location', 'link'],
-            access_token=self.token,
-        )
-        return params
 
     def map_to_accounts(self, accounts: List) -> List[Account]:
         result: List[Account] = []
