@@ -149,6 +149,7 @@ class VKCollector(Datasource):
         Returns:
             (int): Number of posts existing on the platform.
         """
+        self.max_posts_per_call_ = 1
         params = self.generate_req_params(collect_task)  # parameters for generated metadata
         return self.get_posts(params)['total_count']
 

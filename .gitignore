@@ -14,3 +14,4 @@ _telegram
 **.session
 vk_config.v2.json
 test.py
+username.session-journal
