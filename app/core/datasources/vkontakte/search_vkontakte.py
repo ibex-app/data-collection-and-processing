@@ -77,6 +77,15 @@ class VKCollector(Datasource):
         return posts
 
 
+    def get_api_method(self, params: Dict):
+        if 'owner_id' in params and 'query' in params:
+            return "wall.search"
+        elif 'owner_id' in params and 'query' not in params:
+            return "wall.get"
+        else:
+            return "newsfeed.search"
+
+
     def get_posts(self, params: Dict,  next_from=None):
         """ The method is responsible for actual get of data
         Args:
@@ -87,8 +96,8 @@ class VKCollector(Datasource):
             params['start_from'] = None
         else:
             params['start_from'] = next_from
-
-        posts =  self.call_api("https://api.vk.com/method/newsfeed.search", params)        
+        
+        posts =  self.call_api(f"https://api.vk.com/method/{self.get_api_method(params)}", params)        
         return posts
 
 
@@ -109,8 +118,11 @@ class VKCollector(Datasource):
 
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['q'] = collect_task.query
+            params['query'] = collect_task.query
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
-            params['groups'] = ','.join([account.platform_id for account in collect_task.accounts])
+            if len(collect_task.accounts) > 1: 
+                self.log.error(f'[{collect_task.platform}] Can not collect from multiple pages at the same time')
+            params['owner_id'] = collect_task.accounts[0].platform_id
         return params
 
 

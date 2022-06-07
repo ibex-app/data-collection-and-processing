@@ -140,11 +140,10 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
 
 
 def split_sources(accounts:List[Account], collect_action: CollectAction):
-    if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
-        return accounts
-
     chunk_sizes = dict() 
     chunk_sizes[Platform.facebook] = 10
+    chunk_sizes[Platform.vkontakte] = 1
+    chunk_sizes[Platform.telegram] = 1
     chunk_sizes[Platform.youtube] = 1
     chunk_sizes[Platform.twitter] = 3
 
