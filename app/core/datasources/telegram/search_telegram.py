@@ -142,15 +142,15 @@ class TelegramCollector(Datasource):
         )
         post_doc = ''
         try:
-            post_doc = Post(title="post" if 'post' in str(api_post) else "",
+            post_doc = Post(title="",
                             text=api_post.message if 'message' in str(api_post) else "",
                             created_at=api_post.date if 'date' in str(api_post) else datetime.now(),
                             platform=Platform.telegram,
-                            platform_id=api_post.from_id if api_post.from_id is not None else '',
+                            platform_id=api_post.id, #api_post.from_id if api_post.from_id is not None else '',
                             author_platform_id=api_post.peer_id.channel_id if 'channel_id' in str(api_post) else None,
                             scores=scores,
                             api_dump=dict({"dump": str(api_post)}),
-                            monitor_id=api_post.id,
+                            # monitor_id=api_post.id,
                             url=f'https://t.me/c/{api_post.peer_id.channel_id}/{api_post.from_id if api_post.from_id is not None else ""}'  if 'channel_id' in str(api_post) else None,
                     )
         except Exception as exc:

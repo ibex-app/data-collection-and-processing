@@ -26,23 +26,26 @@ class VKCollector(Datasource):
         self.max_posts_per_call_sample = 20
 
         # Variable for maximum number of requests
-        self.max_requests = 1
-        self.max_requests_sample = 50
+        self.max_requests = 50
+        self.max_requests_sample = 1
 
     
     def regenerate_token(self):
+        self.log.info(f'[VKontakte] regeneration the token')
         vk_session = vk_api.VkApi(self.username, self.password)
         vk_session.auth()
         os.environ["VK_TOKEN"] = vk_session.token['access_token']
         self.token = os.getenv('VK_TOKEN')
 
-
+    @sleep_after(tag='Facebook')
     def call_api(self, url, params):
         req = requests.get(url, params)
-        if 'responce' not in req.json():
+        
+        if 'response' not in req.json():
             self.regenerate_token()
             params['access_token'] = self.token
             req = requests.get(url, params)
+        
 
         return req.json()['response']
 
@@ -65,11 +68,11 @@ class VKCollector(Datasource):
             post_iterator += 1
 
             if 'next_from' not in data.keys():
-                print(f'[VKontakte] all end of a list been reached')
+                self.log.info(f'[VKontakte] all end of a list been reached')
                 break
             
             if post_iterator > self.max_requests_:
-                print(f'[VKontakte] limit of {self.max_requests_} have been reached')
+                self.log.info(f'[VKontakte] limit of {self.max_requests_} have been reached')
                 break
 
             data = self.get_posts(params, data['next_from'])
@@ -137,7 +140,7 @@ class VKCollector(Datasource):
         """
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
-
+        
         # parameter for generated metadata
         params = self.generate_req_params(collect_task)
 
@@ -175,7 +178,7 @@ class VKCollector(Datasource):
         Returns:
             (Post): class derived from API data.
         """
-        # print(api_post)
+        # 
         scores = Scores(
             likes= 0 if not 'likes' in api_post else api_post['likes']['count'],
             shares=0 if not 'reposts' in api_post else api_post['reposts']['count'],
@@ -248,7 +251,7 @@ class VKCollector(Datasource):
                 account = self.map_to_acc(account)
                 result.append(account)
             except ValueError as e:
-                print({Platform.vkontakte}, e)
+                self.log.error({Platform.vkontakte}, e)
         return result
 
 
