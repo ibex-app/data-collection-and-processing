@@ -11,7 +11,7 @@ from app.core.celery.worker import celery
 from app.core.dao.collect_actions_dao import get_collect_actions
 from app.core.dao.post_dao import insert_posts
 
-from ibex_models import CollectTask, Post
+from ibex_models import CollectTask, Post, CollectTaskStatus
 from app.config.mongo_config import init_mongo
 
 @celery.task(name='app.core.celery.tasks.collect')
@@ -26,6 +26,11 @@ def collect(collect_task: str):
     if collect_task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{collect_task.platform}] found! skipping..")
         return
+
+    collect_task_ = asyncio.run(CollectTask.get(collect_task.id))
+    collect_task_.status = CollectTaskStatus.is_running
+    asyncio.run(collect_task_.save())
+
     collector_class = collector_classes[collect_task.platform]()
     
     if collect_task.get_hits_count:
@@ -43,6 +48,7 @@ async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: C
         return
     collect_task_.hits_count = hits_count
     collect_task_.sample = False
+    collect_task_.status = CollectTaskStatus.finalized
     await collect_task_.save()
 
 
@@ -57,7 +63,7 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
     :return:
     """
     await init_mongo()
-    
+
 
     # execute collect action
     collected_posts: List[Post] = await collector_method(collect_task)
