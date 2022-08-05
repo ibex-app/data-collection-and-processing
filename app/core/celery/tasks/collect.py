@@ -26,11 +26,7 @@ def collect(collect_task: str):
     if collect_task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{collect_task.platform}] found! skipping..")
         return
-
-    collect_task_ = asyncio.run(CollectTask.get(collect_task.id))
-    collect_task_.status = CollectTaskStatus.is_running
-    asyncio.run(collect_task_.save())
-
+    asyncio.run(set_task_status(collect_task, CollectTaskStatus.is_running))
     collector_class = collector_classes[collect_task.platform]()
     
     if collect_task.get_hits_count:
@@ -38,6 +34,11 @@ def collect(collect_task: str):
     else:
         asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, collect_task))
 
+async def set_task_status(collect_task: CollectTask, status: CollectTaskStatus):
+    await init_mongo()
+    collect_task_ = await CollectTask.get(collect_task.id)
+    collect_task_.status = status
+    await collect_task_.save()
 
 async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: CollectTask):
     await init_mongo()
