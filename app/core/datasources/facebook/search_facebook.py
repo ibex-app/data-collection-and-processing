@@ -49,7 +49,7 @@ class FacebookCollector:
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
             params['accounts'] = ','.join([account.platform_id for account in collect_task.accounts])
         
-        self.log.success(f'[Facebook] requests params has been generated: {params}.')
+        # self.log.success(f'[Facebook] requests params has been generated: {params}.')
         return params
 
 

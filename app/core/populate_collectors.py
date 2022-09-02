@@ -78,8 +78,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
                 hits_count_tasks += hits_count_tasks_
 
-            if len(hits_count_tasks):
-                await CollectTask.insert_many(hits_count_tasks)
+            # if len(hits_count_tasks):
+            #     await CollectTask.insert_many(hits_count_tasks)
 
             collect_tasks += hits_count_tasks
             
@@ -100,15 +100,20 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         for (date_from, date_to) in time_intervals:
             collect_tasks += split_to_tasks(account, search_terms, collect_action, date_from, date_to, sample)
             print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
-
+        
+                
         # TODO move this into point when data collection is finalized
         if not sample: 
             ## Update last collection time 
             collect_action.last_collection_date = time_intervals[-1][1]
             await collect_action.save()
 
-    
     print(f'{len(collect_tasks)} collect tasks created...')
+    if len(collect_tasks):
+        print(f'saving {len(collect_tasks)} collect casts')
+        print(f'from that {len(hits_count_tasks)} hits count collect casts')
+        await CollectTask.insert_many(collect_tasks)
+
     # print(collect_tasks)
     # Create separate task groups for platforms, that groups can be executed in parallel 
     for platform in Platform:
