@@ -17,7 +17,7 @@ class DBConstants:
     search_terms = 'search_terms'
     search_terms_path = f'{prefix}resources/search_terms.json'
     # TODO: Move to env
-    connection_string = os.getenv('MONGO_CS_DEV')
+    connection_string = os.getenv('MONGO_CS')
     connection_string_local = "mongodb://127.0.0.1:27017/"    
 
 DB = DBConstants
