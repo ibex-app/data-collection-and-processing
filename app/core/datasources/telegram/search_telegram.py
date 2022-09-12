@@ -6,6 +6,7 @@ from typing import List, Dict
 from ibex_models import Post, Scores, CollectTask, Platform, Account
 from app.core.datasources.datasource import Datasource
 from app.config.aop_config import slf, sleep_after
+from app.core.split import split_complex_query
 
 @slf
 class TelegramCollector(Datasource):
@@ -49,6 +50,26 @@ class TelegramCollector(Datasource):
             pass
 
         await self.client.start()
+
+    async def get_keyword_with_least_posts(self, collect_task: CollectTask) -> str:
+        # split_complex_query splits query into words and statements
+        # keyword_1,           keyword_2,          keyword_3,      keyword_4
+        #        statement_1,         statement_2,       statement_3
+        keywords, statements = split_complex_query(collect_task.query, self.operators)
+
+        tmp_query = collect_task.query
+        keywords_with_hits_counts = []
+        for i, keyword in enumerate(keywords):
+            if statements[i - 1] == '_NOT': continue
+            collect_task.query = keyword
+            hits_count = await self.get_hits_count(collect_task)
+            keywords_with_hits_counts.append((keyword, hits_count))
+
+        keywords_with_hits_counts.sort(key=lambda tup: tup[1])
+
+        keyword_with_least_posts = keywords_with_hits_counts[0]
+        collect_task.query = tmp_query
+        return keyword_with_least_posts[0]
 
 
     async def collect(self, collect_task: CollectTask) -> List[Post]:
@@ -123,7 +144,16 @@ class TelegramCollector(Datasource):
         Returns:
             (int): Number of posts existing on the platform.
         """
-        return -1
+        await self.connect()
+
+        dialog_name = ''
+        if collect_task.accounts and collect_task.accounts[0]:
+            dialog_name = collect_task.accounts[0].platform_id
+
+        first_msg_id, last_msg_id = await self.get_first_and_last_message(dialog_name, collect_task)
+
+        await self.client.disconnect()
+        return last_msg_id - first_msg_id
 
 
     def map_to_post(self, api_post: Dict, collect_task: CollectTask) -> Post:
