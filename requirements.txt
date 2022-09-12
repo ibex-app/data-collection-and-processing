@@ -17,3 +17,4 @@ pytube==11.0.1
 scenecut_extractor==0.3.3
 telethon
 vk_api
+eldar==0.0.8

@@ -11,7 +11,7 @@ from searchtweets import (
     gen_request_parameters,
     load_credentials
 )
-from app.core.datasources.utils import update_hits_count
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query
 import pandas as pd
 # import os
 from itertools import chain
@@ -138,7 +138,10 @@ class TwitterCollector:
         posts = self._df_to_posts(df)
         self.log.success(f'[Twitter] {len(posts)} posts collected')
         
-        return posts 
+        valid_posts = validate_posts_by_query(collect_task, posts)
+        self.log.success(f'[Twitter] {len(valid_posts)} valid posts collected')
+    
+        return valid_posts
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
         params = gen_request_parameters(

@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask, MediaStatus, monitor
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
-from app.core.datasources.utils import update_hits_count
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query
+
 
 @slf
 class YoutubeCollector:
@@ -55,10 +56,12 @@ class YoutubeCollector:
         self.log.success(f'[YouTube-params] {params}')
         posts_from_api = self._collect(params)
         posts = self.map_to_posts(posts_from_api, collect_task)
-
         self.log.success(f'[YouTube] {len(posts)} posts collected')
+        
+        valid_posts = validate_posts_by_query(collect_task, posts)
+        self.log.success(f'[YouTube] {len(valid_posts)} valid posts collected')
     
-        return posts 
+        return valid_posts
 
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
@@ -75,7 +78,7 @@ class YoutubeCollector:
     def _collect(self, params):
         ids = self.collect_ids(params)
         collected_posts = self._get_video_details(ids)
-
+        
         if len(collected_posts) == 0:
             self.log.warn('[YouTube] No data collected.')
 

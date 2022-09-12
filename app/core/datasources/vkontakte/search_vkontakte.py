@@ -6,6 +6,7 @@ from datetime import datetime
 from app.core.datasources.datasource import Datasource
 import vk_api
 from app.config.aop_config import slf, sleep_after
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query
 
 @slf
 class VKCollector(Datasource):
@@ -149,7 +150,11 @@ class VKCollector(Datasource):
 
         # list of posts with type of Post for every element
         posts = self.map_to_posts(results, params)
-        return posts
+
+        valid_posts = validate_posts_by_query(collect_task, posts)
+        self.log.success(f'[VKontakte] {len(valid_posts)} valid posts collected')
+    
+        return valid_posts
 
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:

@@ -10,7 +10,7 @@ from typing import List, Dict
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
-from app.core.datasources.utils import update_hits_count
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query
 
 @slf
 class FacebookCollector:
@@ -59,8 +59,11 @@ class FacebookCollector:
         results: List[any] = self._collect(params)
         posts = self._map_to_posts(results, params)
 
-        return posts
-
+        valid_posts = validate_posts_by_query(collect_task, posts)
+        self.log.success(f'[Facebook] {len(valid_posts)} valid posts collected')
+    
+        return valid_posts
+        
 
     def _collect(self, params) -> List[Dict]:
         results = []
