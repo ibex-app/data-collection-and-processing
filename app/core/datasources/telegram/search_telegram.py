@@ -7,6 +7,7 @@ from ibex_models import Post, Scores, CollectTask, Platform, Account
 from app.core.datasources.datasource import Datasource
 from app.config.aop_config import slf, sleep_after
 from app.core.split import split_complex_query
+from eldar import Query
 
 @slf
 class TelegramCollector(Datasource):
@@ -99,17 +100,26 @@ class TelegramCollector(Datasource):
         # Variables for searching through date range.
         first_msg_id, last_msg_id = await self.get_first_and_last_message(dialog_name, collect_task)
         
+        init_query = collect_task.query
+        if ' AND ' in collect_task.query:
+            init_query = await self.get_keyword_with_least_posts(collect_task)
+        
         requests_count = 0
         while next_from:
             messages = await self.client.get_messages(dialog_name,
-                                                 search=collect_task.query,
+                                                 search=init_query,
                                                  min_id=first_msg_id,
                                                  max_id=last_msg_id,
                                                  add_offset=requests_count * self.max_posts_per_call_,
                                                  limit=self.max_posts_per_call_
                                                 )
             print('offset', requests_count * self.max_posts_per_call_)
-            posts += messages
+            eldar = Query(collect_task.query)
+            for msg in messages:
+                if not msg.text: continue
+                if len(eldar.filter([msg.text])) == 0: continue
+                posts += messages
+                
             requests_count += 1
             print(f'[Telegram] request # {requests_count} messages {len(messages)}')
 
