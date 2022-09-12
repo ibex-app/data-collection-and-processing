@@ -18,3 +18,4 @@ scenecut_extractor==0.3.3
 telethon
 vk_api
 eldar==0.0.8
+unidecode==1.3.4

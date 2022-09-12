@@ -57,7 +57,7 @@ class FacebookCollector:
         params  = self.generate_request_params(collect_task)
 
         results: List[any] = self._collect(params)
-        posts = self._map_to_posts(results, params)
+        posts = self._map_to_posts(results, collect_task)
 
         valid_posts = validate_posts_by_query(collect_task, posts)
         self.log.success(f'[Facebook] {len(valid_posts)} valid posts collected')
@@ -137,17 +137,16 @@ class FacebookCollector:
 
         url = api_post['postUrl'] if 'postUrl' in api_post.keys() else None
             
-        post = Post(title=api_post['message'] if 'message' in api_post else "",
-                             text=api_post['description'] if 'description' in api_post else "",
-                             created_at=api_post['date'] if 'date' in api_post else datetime.now(),
-                             platform=Platform.facebook,
-                             platform_id=api_post['platformId'],
-                             author_platform_id=api_post['account']['id'] if 'account' in api_post else None,
-                             scores=scores,
-                             api_dump=api_post,
-                            #  monitor_id=collect_task.monitor_id,
-                             url=url
-                             )
+        post = Post(title=title,
+                    text=api_post['description'] if 'description' in api_post else "",
+                    created_at=api_post['date'] if 'date' in api_post else datetime.now(),
+                    platform=Platform.facebook,
+                    platform_id=api_post['platformId'],
+                    author_platform_id=api_post['account']['id'] if 'account' in api_post else None,
+                    scores=scores,
+                    api_dump=api_post,
+                #  monitor_id=collect_task.monitor_id,
+                    url=url)
         post = add_search_terms_to_post(collect_task, post)
         return post
 

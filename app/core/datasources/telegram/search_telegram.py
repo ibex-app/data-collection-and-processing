@@ -32,6 +32,11 @@ class TelegramCollector(Datasource):
         # Variable for maximum number of requests
         self.max_requests = 50
         self.max_requests_sample = 1
+        self.operators = dict(
+            or_ = ' OR ',
+            and_ = ' AND ',
+            not_ = ' NOT ',
+        )
 
 
     async def get_first_and_last_message(self, dialog_name, collect_task):

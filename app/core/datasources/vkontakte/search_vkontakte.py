@@ -149,7 +149,7 @@ class VKCollector(Datasource):
         results: List[any] = self.get_posts_by_params(params)
 
         # list of posts with type of Post for every element
-        posts = self.map_to_posts(results, params)
+        posts = self.map_to_posts(results, collect_task)
 
         valid_posts = validate_posts_by_query(collect_task, posts)
         self.log.success(f'[VKontakte] {len(valid_posts)} valid posts collected')
