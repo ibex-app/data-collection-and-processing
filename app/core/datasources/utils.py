@@ -9,7 +9,7 @@ async def update_hits_count(collect_task: CollectTask, hits_count: int):
     collect_task_.sample = False
     await collect_task_.save()
 
-async def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
+def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
     if not collect_task.search_terms: return posts
     if len(collect_task.search_terms) == 0: return posts
     eldar = Query(collect_task.query)
@@ -21,6 +21,12 @@ async def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) 
         posts_.append(post)
     return posts_
 
+def add_search_terms_to_post(collect_task: CollectTask, post:Post) -> Post:
+    if not collect_task.search_terms: return post
+    if len(collect_task.search_terms) == 0: return post
+    post.search_terms_ids = [search_term.id for search_term in collect_task.search_terms]
+    return post
+    
 # async def validate_post_query(query, post: Post):
 #     eldar = Query(collect_task.query)
 #     text: str = f'{post.title} {post.text}' 

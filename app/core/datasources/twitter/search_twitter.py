@@ -11,7 +11,7 @@ from searchtweets import (
     gen_request_parameters,
     load_credentials
 )
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
 import pandas as pd
 # import os
 from itertools import chain
@@ -135,7 +135,7 @@ class TwitterCollector:
             
         df = self._create_df(tweets)
         df = self._standardize(df)
-        posts = self._df_to_posts(df)
+        posts = self._map_to_posts(df, collect_task)
         self.log.success(f'[Twitter] {len(posts)} posts collected')
         
         valid_posts = validate_posts_by_query(collect_task, posts)
@@ -244,7 +244,7 @@ class TwitterCollector:
 
 
     @staticmethod
-    def map_to_post(api_post: pd.Series) -> Post:
+    def map_to_post(api_post: pd.Series, collect_task: CollectTask) -> Post:
         # create scores class
         likes = api_post['public_metrics_like_count'] if 'public_metrics_like_count' in api_post else None
         shares = api_post['public_metrics_retweet_count'] if 'public_metrics_retweet_count' in api_post else None
@@ -257,7 +257,7 @@ class TwitterCollector:
                         engagement=engagement)
         
         # create post class
-        post_doc = Post(title=api_post['text'],
+        post = Post(title=api_post['text'],
                              text=api_post['source'],
                              created_at=api_post['created_at'],
                              platform=Platform.twitter,
@@ -266,15 +266,17 @@ class TwitterCollector:
                              scores=scores,
                              url = f"https://twitter.com/{api_post['author_id']}/status/{api_post['platform_id']}",
                              api_dump=dict(**api_post))
-        return post_doc
+
+        post = add_search_terms_to_post(collect_task, post)
+        return post
 
 
-    def _df_to_posts(self, df: pd.DataFrame) -> List[Post]:
+    def _map_to_posts(self, df: pd.DataFrame, collect_task: CollectTask) -> List[Post]:
         posts = []
         for obj in df.iterrows():
             try:
                 o = obj[1]
-                post = TwitterCollector.map_to_post(o)
+                post = TwitterCollector.map_to_post(o, collect_task)
                 posts.append(post)
             except ValueError as e:
                 self.log.error(f'[Twitter] {e}')

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask, MediaStatus, monitor
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
 
 
 @slf
@@ -157,7 +157,7 @@ class YoutubeCollector:
                             engagement=engagement)
 
 
-        post_doc = Post(    platform_id =       api_post['id'],
+        post = Post(    platform_id =       api_post['id'],
                             title =             api_post['snippet']['title'],
                             text =              api_post['snippet']['description'],
                             created_at =        api_post['snippet']['publishedAt'],
@@ -170,8 +170,8 @@ class YoutubeCollector:
                             scores =            scores,
                             media_status =      MediaStatus.to_be_downloaded
                         )
-    
-        return post_doc
+        post = add_search_terms_to_post(collect_task, post)
+        return post
 
 
     def map_to_posts(self, posts: List[Dict], collect_task: CollectTask):

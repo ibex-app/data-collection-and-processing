@@ -6,7 +6,7 @@ from datetime import datetime
 from app.core.datasources.datasource import Datasource
 import vk_api
 from app.config.aop_config import slf, sleep_after
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
 
 @slf
 class VKCollector(Datasource):
@@ -188,7 +188,7 @@ class VKCollector(Datasource):
             likes= 0 if not 'likes' in api_post else api_post['likes']['count'],
             shares=0 if not 'reposts' in api_post else api_post['reposts']['count'],
         )
-        post_doc = Post(title=api_post['title'] if 'title' in api_post else "",
+        post = Post(title=api_post['title'] if 'title' in api_post else "",
                         text=api_post['text'] if 'text' in api_post else "",
                         created_at=api_post['date'] if 'date' in api_post else datetime.now(),
                         platform=Platform.vkontakte,
@@ -199,7 +199,8 @@ class VKCollector(Datasource):
                         monitor_id=api_post['id'],
                         url=f'https://vk.com/wall{api_post["owner_id"]}_{api_post["id"]}',
                         )
-        return post_doc
+        post = add_search_terms_to_post(collect_task, post)
+        return post
 
 
     def map_to_posts(self, posts: List[Dict], collect_task: CollectTask):

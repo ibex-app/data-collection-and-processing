@@ -10,7 +10,7 @@ from typing import List, Dict
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
 
 @slf
 class FacebookCollector:
@@ -137,7 +137,7 @@ class FacebookCollector:
 
         url = api_post['postUrl'] if 'postUrl' in api_post.keys() else None
             
-        post_doc = Post(title=api_post['message'] if 'message' in api_post else "",
+        post = Post(title=api_post['message'] if 'message' in api_post else "",
                              text=api_post['description'] if 'description' in api_post else "",
                              created_at=api_post['date'] if 'date' in api_post else datetime.now(),
                              platform=Platform.facebook,
@@ -148,7 +148,9 @@ class FacebookCollector:
                             #  monitor_id=collect_task.monitor_id,
                              url=url
                              )
-        return post_doc
+        post = add_search_terms_to_post(collect_task, post)
+        return post
+
 
 
     def _map_to_posts(self, posts: List[Dict], collect_task: CollectTask):
