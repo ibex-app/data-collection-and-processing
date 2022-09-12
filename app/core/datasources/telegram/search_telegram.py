@@ -159,8 +159,11 @@ class TelegramCollector(Datasource):
         Returns:
             (int): Number of posts existing on the platform.
         """
+        if collect_task.query and ' AND ' in collect_task.query or ' OR ' in collect_task.query:
+            return -1
+            
         await self.connect()
-
+        
         dialog_name = ''
         if collect_task.accounts and collect_task.accounts[0]:
             dialog_name = collect_task.accounts[0].platform_id
@@ -168,7 +171,7 @@ class TelegramCollector(Datasource):
         first_msg_id, last_msg_id = await self.get_first_and_last_message(dialog_name, collect_task)
 
         await self.client.disconnect()
-        return last_msg_id - first_msg_id
+        return first_msg_id - last_msg_id
 
 
     def map_to_post(self, api_post: Dict, collect_task: CollectTask) -> Post:
