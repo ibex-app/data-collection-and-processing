@@ -111,7 +111,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     print(f'{len(collect_tasks)} collect tasks created...')
     if len(collect_tasks):
         print(f'saving {len(collect_tasks)} collect casts')
-        print(f'from that {len(hits_count_tasks)} hits count collect casts')
+        if sample:
+            print(f'from that {len(hits_count_tasks)} hits count collect tasks')
         await CollectTask.insert_many(collect_tasks)
 
     # print(collect_tasks)

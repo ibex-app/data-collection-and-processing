@@ -59,6 +59,17 @@ def get_query_length(collect_action: CollectAction, accounts: List[Account]) -> 
     return query_length
 
 
+def split_sources(accounts:List[Account], collect_action: CollectAction):
+    chunk_sizes = dict() 
+    chunk_sizes[Platform.facebook] = 10
+    chunk_sizes[Platform.vkontakte] = 1
+    chunk_sizes[Platform.telegram] = 1
+    chunk_sizes[Platform.youtube] = 1
+    chunk_sizes[Platform.twitter] = 3
+
+    return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
+
+
 def split_complex_query(keyword, operators):
     words = []
     statements = []
@@ -81,14 +92,29 @@ def split_complex_query(keyword, operators):
 def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, accounts: List[Account]):
     terms:List[str] = [search_term.term for search_term in search_terms]
 
-    if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
-        return terms
-
     all_queries = []
     full_query = ''
     operators = boolean_operators[collect_action.platform]
     query_length_for_platform = get_query_length(collect_action, accounts)
     
+    # generate queries that are less then max lenght each 
+    # TODO DRY this duplicated part
+    if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
+        for single_term in terms:
+            if len(terms) == 1: return [terms[1]]
+            
+            full_query_ = f'{ full_query }{operators["or_"]}({single_term})'
+            if len(full_query_) > query_length_for_platform and full_query:
+                full_query_striped = full_query.lstrip(f'{operators["or_"]}')
+                all_queries.append(full_query_striped)
+                full_query = f'({single_term})'
+            else:
+                full_query = full_query_
+        
+        full_query_striped = full_query.lstrip(f'{operators["or_"]}')
+        all_queries.append(full_query_striped)
+        return all_queries
+
     # print(f'terms --- {len(terms)}' )
     for keyword in terms:
         if ' OR ' not in keyword and ' AND ' not in keyword and ' NOT ' not in keyword:
@@ -120,34 +146,18 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
                     break 
         
         full_query_ = f'{ full_query }{operators["or_"]}({single_term})'
-
-        # print(f'full query ---{full_query}---')
-        # print(f'full query_ ---{full_query_}---')
-
         if len(full_query_) > query_length_for_platform and full_query:
-            full_query_striped = full_query.lstrip(f' {operators["or_"]} ')
+            full_query_striped = full_query.lstrip(f'{operators["or_"]}')
             all_queries.append(full_query_striped)
-            # print(f'appending full_query_striped ---{full_query_striped}---')
             full_query = f'({single_term})'
         else:
             full_query = full_query_
 
-    full_query_striped = full_query.lstrip(f' {operators["or_"]} ')
-    # print(f'appending last full_query_striped ---{full_query_striped}---')
+    full_query_striped = full_query.lstrip(f'{operators["or_"]}')
     all_queries.append(full_query_striped)
 
     return all_queries
 
-
-def split_sources(accounts:List[Account], collect_action: CollectAction):
-    chunk_sizes = dict() 
-    chunk_sizes[Platform.facebook] = 10
-    chunk_sizes[Platform.vkontakte] = 1
-    chunk_sizes[Platform.telegram] = 1
-    chunk_sizes[Platform.youtube] = 1
-    chunk_sizes[Platform.twitter] = 3
-
-    return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
 
 
 def split_queries_youtube(search_terms, collect_action, accounts):
