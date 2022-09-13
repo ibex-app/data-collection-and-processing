@@ -38,7 +38,12 @@ class VKCollector(Datasource):
         os.environ["VK_TOKEN"] = vk_session.token['access_token']
         self.token = os.getenv('VK_TOKEN')
 
-    @sleep_after(tag='Facebook')
+
+    @sleep_after(tag='VKontakte')
+    def call_api_sleep(self, url, params):
+        return self.call_api(url, params)
+
+
     def call_api(self, url, params):
         req = requests.get(url, params)
         
@@ -47,7 +52,6 @@ class VKCollector(Datasource):
             params['access_token'] = self.token
             req = requests.get(url, params)
         
-
         return req.json()['response']
 
 
@@ -101,7 +105,7 @@ class VKCollector(Datasource):
         else:
             params['start_from'] = next_from
         
-        posts =  self.call_api(f"https://api.vk.com/method/{self.get_api_method(params)}", params)        
+        posts =  self.call_api_sleep(f"https://api.vk.com/method/{self.get_api_method(params)}", params)        
         return posts
 
 

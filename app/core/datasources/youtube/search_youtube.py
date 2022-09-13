@@ -191,7 +191,7 @@ class YoutubeCollector:
             part='snippet',
             maxResults=5,
             key=self.token,
-            order='relevance',
+            order='rating',
             type='channel',
             q=query
         )
