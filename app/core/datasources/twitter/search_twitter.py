@@ -282,7 +282,7 @@ class TwitterCollector:
                 self.log.error(f'[Twitter] {e}')
         return posts
 
-    async def get_accounts(self, query) -> List[Account]:
+    async def get_accounts(self, query, limit: int = 5) -> List[Account]:
         """The method is responsible for collecting Accounts
               from platforms.
           Args:
@@ -291,6 +291,7 @@ class TwitterCollector:
           Returns:
               (List[Account]): List of collected accounts.
           """
+        self.log.info(f'[Twitter] searching for accounts with query: {query}')
         # parameter for generated metadata
         API_KEY = os.getenv('TWITTER_API_KEY')
         API_SECRET = os.getenv('TWITTER_API_SECRET')
@@ -306,7 +307,8 @@ class TwitterCollector:
         results: List[any] = r.json()
 
         # list of accounts with type of Account for every element
-        accounts = self.map_to_accounts(results)
+        accounts = self.map_to_accounts(results[:limit])
+        self.log.info(f'[Twitter] {len(accounts)} found')
         return accounts
 
     def map_to_accounts(self, accounts: List) -> List[Account]:

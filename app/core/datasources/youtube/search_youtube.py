@@ -186,10 +186,11 @@ class YoutubeCollector:
 
 
     
-    async def get_accounts(self, query:str)-> List[Account]:
+    async def get_accounts(self, query:str, limit: int = 5)-> List[Account]:
+        self.log.info(f'[Youtube] searching for accounts with query: {query}')
         params = dict(
             part='snippet',
-            maxResults=5,
+            maxResults=limit,
             key=self.token,
             order='rating',
             type='channel',
@@ -200,7 +201,7 @@ class YoutubeCollector:
         res = requests.get(req_url, params)
         acc = res.json()['items']
         accounts = self.map_to_accounts(acc)
-
+        self.log.info(f'[Youtube] {len(accounts)} found')
         return accounts
 
     def map_to_accounts(self, accounts: List) -> List[Account]:

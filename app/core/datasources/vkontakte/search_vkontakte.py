@@ -221,7 +221,7 @@ class VKCollector(Datasource):
         return res
 
     # @abstractmethod
-    async def get_accounts(self, query) -> List[Account]:
+    async def get_accounts(self, query, limit: int = 5) -> List[Account]:
         """The method is responsible for collecting Accounts
               from platforms.
           Args:
@@ -230,10 +230,11 @@ class VKCollector(Datasource):
           Returns:
               (List[Account]): List of collected accounts.
           """
+        self.log.info(f'[VKontakte] searching for accounts with query: {query}')
         # parameter for generated metadata
         params = dict(
             access_token=self.token,
-            limit=5,
+            limit=limit,
             fields=[''],
             v=5.82,
             q=query
@@ -243,6 +244,8 @@ class VKCollector(Datasource):
 
         # list of accounts with type of Account for every element
         accounts = self.map_to_accounts(results)
+        self.log.info(f'[VKontakte] {len(accounts)} found')
+
         return accounts
 
 

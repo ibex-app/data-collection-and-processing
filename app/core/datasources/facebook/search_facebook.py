@@ -163,7 +163,9 @@ class FacebookCollector:
         return res
 
 
-    async def get_accounts(self, query) -> List[Account]:
+    async def get_accounts(self, query, limit: int = 5) -> List[Account]:
+        self.log.info(f'[Facebook] searching for accounts with query: {query}')
+
         params = dict(
             client_id=self.app_id,
             client_secret=self.app_secret,
@@ -178,9 +180,10 @@ class FacebookCollector:
             q=query
         )
 
-        api_accounts = requests.get("https://graph.facebook.com/pages/search?q=Facebook", params=params).json()
+        api_accounts = requests.get("https://graph.facebook.com/pages/search", params=params).json()
         
         accounts = self.map_to_accounts(api_accounts['data'])
+        self.log.info(f'[Facebook] {len(accounts)} found')
         return accounts
 
 
