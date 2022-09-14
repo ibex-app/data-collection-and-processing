@@ -70,7 +70,7 @@ def split_sources(accounts:List[Account], collect_action: CollectAction):
     return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
 
 
-def split_complex_query(keyword, operators):
+def split_complex_query(keyword, operators = boolean_operators[Platform.facebook]):
     words = []
     statements = []
     and_splits = keyword.split(' AND ')
@@ -127,7 +127,7 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
             # print(f'decls --- {decls}' )
             # print(f'single_term --- {single_term}' )
         else:
-            words, statements = split_complex_query(keyword, operators)
+            words, statements = split_complex_query(keyword)
 
             words_decls = []
             for word in words:
