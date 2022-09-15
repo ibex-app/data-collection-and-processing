@@ -22,11 +22,11 @@ def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> Lis
     return posts_
 
 def add_search_terms_to_post(collect_task: CollectTask, post:Post) -> Post:
-    print('collect_task.search_terms exists', bool(collect_task.search_terms))
-    if not collect_task.search_terms: return post
-    print('collect_task.search_terms len', len(collect_task.search_terms))
-    if len(collect_task.search_terms) == 0: return post
-    post.search_terms_ids = [search_term.id for search_term in collect_task.search_terms]
+    # print('collect_task.search_terms exists', bool(collect_task.search_terms))
+    # if not collect_task.search_terms: return post
+    # print('collect_task.search_terms len', len(collect_task.search_terms))
+    # if len(collect_task.search_terms) == 0: return post
+    # post.search_terms_ids = [search_term.id for search_term in collect_task.search_terms]
     return post
     
 # async def validate_post_query(query, post: Post):

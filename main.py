@@ -32,6 +32,7 @@ async def run_downloader_tasks(monitor_id:UUID):
 async def run_processor_tasks(monitor_id:UUID):
     await init_mongo()
     processor_tasks: List[xmap or group] = await get_processor_tasks(monitor_id)
+    print(f'{len(processor_tasks)} processor_tasks created')
     if not processor_tasks:
         return
     g = group(processor_tasks)

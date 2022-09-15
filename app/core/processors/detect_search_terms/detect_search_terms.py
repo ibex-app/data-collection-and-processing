@@ -18,12 +18,13 @@ class DetectSearchTerms:
     
     @staticmethod
     def get_query_with_declancions(keyword):
+        full_term = ''
         if ' OR ' not in keyword and ' AND ' not in keyword and ' NOT ' not in keyword:
             try:
                 search_terms_with_declancions = get_declensions([keyword], langid.classify(keyword)[0])
-                eldar = Query(' OR '.join(search_terms_with_declancions))
+                full_term = ' OR '.join(search_terms_with_declancions)
             except:
-                eldar = Query(keyword)
+                full_term = keyword
         else:
             single_keywords, statements = split_complex_query(keyword)
             words_decls = []
@@ -32,36 +33,42 @@ class DetectSearchTerms:
                     declensions = get_declensions([word], langid.classify(word)[0])
                     words_decls.append(' OR '.join(declensions))
                 except:
-                    words_decls.append(declensions)
+                    words_decls.append(word)
             full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
-            eldar = Query(full_term)
-        return eldar
+
+        # print(f'[DetectSearchTerm] full_term for {keyword} : {full_term} ')
+        return Query(full_term)
 
 
     async def process(self, task:ProcessTask):
-        self.log.info(f'[DetectSearchTerm] {task.post.id} in process task')
+        # self.log.info(f'[DetectSearchTerm] {task.post.id} in process task')
         
+        # TODO get only latest posts 
+        # {sent_at: {$exists: false}}
         posts:List[Post] = await Post.find(In(Post.monitor_ids, [task.monitor_id])).to_list()
         monitor: Monitor = await Monitor.find_one(Monitor.id == task.monitor_id)
         
         # TODO test search terms for all / or singe monitor
         search_terms = await SearchTerm.find_all().to_list()
-        search_terms_ = await SearchTerm.find(In(SearchTerm.tag, monitor.id)).to_list()
+        search_terms_ = await SearchTerm.find(In(SearchTerm.tags, [monitor.id])).to_list()
 
         self.log.info(f'[DetectSearchTerm] {len(search_terms)} total search terms')
         self.log.info(f'[DetectSearchTerm] {len(search_terms_)} total search terms in monitor')
 
         # TODO use subprocesses here
         for search_term in search_terms:
-            eldar_query = self.get_query_with_declancions(search_term)
+            eldar_query = self.get_query_with_declancions(search_term.term)
             
             for post in posts:
+                post.search_terms_ids = post.search_terms_ids or []
                 text: str = f'{post.title} {post.text}'
                 if post.transcripts and len(post.transcripts):
                      text += ' '.join([transcript.text for transcript in post.transcripts])
                 if not text: continue
                 if len(eldar_query.filter([text])) == 0: continue
-                post.search_terms_ids += search_term.id
+                if search_term.id not in post.search_terms_ids: post.search_terms_ids.append(search_term.id)
         
-        await Post.save_many(posts)
+        for post in posts:
+            await post.save()
+
         return True

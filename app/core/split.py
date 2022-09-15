@@ -38,7 +38,7 @@ boolean_operators[Platform.youtube] = dict(
     and_ = ' ',
     not_ = ' -',
 )
-
+default_boolean_operators = boolean_operators[Platform.facebook]
 query_length_ = dict()
 query_length_[Platform.facebook] = 908
 # academic account
@@ -49,6 +49,10 @@ query_length_[Platform.twitter] = 124
 query_length_[Platform.twitter] = 254
 
 query_length_[Platform.youtube] = 1994
+
+query_length_[Platform.telegram] = 99999
+
+query_length_[Platform.vkontakte] = 99999
 
 def get_query_length(collect_action: CollectAction, accounts: List[Account]) -> int:
     query_length = query_length_[collect_action.platform]
@@ -94,14 +98,14 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
 
     all_queries = []
     full_query = ''
-    operators = boolean_operators[collect_action.platform]
+    operators = default_boolean_operators
     query_length_for_platform = get_query_length(collect_action, accounts)
     
     # generate queries that are less then max lenght each 
     # TODO DRY this duplicated part
     if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
         for single_term in terms:
-            if len(terms) == 1: return [terms[1]]
+            if len(terms) == 1: return [terms[0]]
             
             full_query_ = f'{ full_query }{operators["or_"]}({single_term})'
             if len(full_query_) > query_length_for_platform and full_query:
@@ -115,6 +119,7 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
         all_queries.append(full_query_striped)
         return all_queries
 
+    operators = boolean_operators[collect_action.platform]
     # print(f'terms --- {len(terms)}' )
     for keyword in terms:
         if ' OR ' not in keyword and ' AND ' not in keyword and ' NOT ' not in keyword:
@@ -127,7 +132,7 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
             # print(f'decls --- {decls}' )
             # print(f'single_term --- {single_term}' )
         else:
-            words, statements = split_complex_query(keyword)
+            words, statements = split_complex_query(keyword, operators)
 
             words_decls = []
             for word in words:
