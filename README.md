@@ -1,4 +1,4 @@
-# Project IBEX
+# ibex
 A Celery application to collect data, download media and extract information from social media APIs.
 
 ## Requirements
