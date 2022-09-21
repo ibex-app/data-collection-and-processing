@@ -6,7 +6,7 @@ from datetime import datetime
 from app.core.datasources.datasource import Datasource
 import vk_api
 from app.config.aop_config import slf, sleep_after
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts
 
 @slf
 class VKCollector(Datasource):
@@ -156,6 +156,7 @@ class VKCollector(Datasource):
         posts = self.map_to_posts(results, collect_task)
 
         valid_posts = validate_posts_by_query(collect_task, posts)
+        valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
         self.log.success(f'[VKontakte] {len(valid_posts)} valid posts collected')
     
         return valid_posts
@@ -203,7 +204,6 @@ class VKCollector(Datasource):
                         monitor_id=api_post['id'],
                         url=f'https://vk.com/wall{api_post["owner_id"]}_{api_post["id"]}',
                         )
-        post = add_search_terms_to_post(collect_task, post)
         return post
 
 

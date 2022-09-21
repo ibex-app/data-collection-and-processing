@@ -21,8 +21,8 @@ async def get_processor_tasks(monitor_id:UUID):
 
         print(f'{len(tasks_for_speech_to_text)} speech_to_text process tasks created...')
 
-    process_tasks.append(ProcessTask(processor=Processor.detect_search_terms, monitor_id=monitor_id))
-    print(f'single tasks_for_detect_search_terms process tasks created... for monitor {monitor_id}')
+    # process_tasks.append(ProcessTask(processor=Processor.detect_search_terms, monitor_id=monitor_id))
+    # print(f'single tasks_for_detect_search_terms process tasks created... for monitor {monitor_id}')
 
 
     tasks_group = []

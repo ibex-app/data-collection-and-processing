@@ -34,11 +34,6 @@ def collect(collect_task: str):
     else:
         asyncio.run(collect_and_save_items_in_mongo(collector_class.collect, collect_task))
 
-async def set_task_status(collect_task: CollectTask, status: CollectTaskStatus):
-    await init_mongo()
-    collect_task_ = await CollectTask.get(collect_task.id)
-    collect_task_.status = status
-    await collect_task_.save()
 
 async def set_task_status(collect_task: CollectTask, collect_task_status: CollectTaskStatus):
     await init_mongo()
@@ -85,5 +80,8 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
         post.monitor_ids = [collect_task.monitor_id]
 
     count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
+    collect_task_ = await CollectTask.get(collect_task.id)
+    collect_task_.status = CollectTaskStatus.finalized
+    await collect_task_.save()
 
     print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')

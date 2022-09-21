@@ -10,7 +10,7 @@ from typing import List, Dict
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts
 
 @slf
 class FacebookCollector:
@@ -60,6 +60,7 @@ class FacebookCollector:
         posts = self._map_to_posts(results, collect_task)
 
         valid_posts = validate_posts_by_query(collect_task, posts)
+        valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
         self.log.success(f'[Facebook] {len(valid_posts)} valid posts collected')
     
         return valid_posts
@@ -147,7 +148,7 @@ class FacebookCollector:
                     api_dump=api_post,
                 #  monitor_id=collect_task.monitor_id,
                     url=url)
-        post = add_search_terms_to_post(collect_task, post)
+
         return post
 
 

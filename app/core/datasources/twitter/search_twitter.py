@@ -11,7 +11,7 @@ from searchtweets import (
     gen_request_parameters,
     load_credentials
 )
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_post
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts
 import pandas as pd
 # import os
 from itertools import chain
@@ -139,8 +139,9 @@ class TwitterCollector:
         self.log.success(f'[Twitter] {len(posts)} posts collected')
         
         valid_posts = validate_posts_by_query(collect_task, posts)
+        valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
         self.log.success(f'[Twitter] {len(valid_posts)} valid posts collected')
-    
+
         return valid_posts
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
@@ -267,7 +268,6 @@ class TwitterCollector:
                              url = f"https://twitter.com/{api_post['author_id']}/status/{api_post['platform_id']}",
                              api_dump=dict(**api_post))
 
-        post = add_search_terms_to_post(collect_task, post)
         return post
 
 
