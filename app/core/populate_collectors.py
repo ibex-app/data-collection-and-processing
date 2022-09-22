@@ -43,6 +43,26 @@ async def get_search_terms(collect_action: CollectAction) -> List[SearchTerm]:
     
     return await SearchTerm.find().to_list()
 
+def generate_hits_count_tasks(collect_action: CollectAction, 
+                              monitor: Monitor,
+                              accounts: List[Account],
+                              search_terms: List[SearchTerm],
+                              date_to: datetime,
+                              sample: bool=False) -> List[CollectTask]:
+    hits_count_tasks: List[CollectTask] = []
+
+    for account in accounts:
+        for search_term in search_terms:
+            hits_count_tasks_: List[CollectTask] = split_to_tasks([account], [search_term], collect_action, monitor.date_from, date_to, sample)
+
+            for hits_count_task in hits_count_tasks_:
+                hits_count_task.get_hits_count = True
+                hits_count_task.search_terms = [search_term]
+
+            hits_count_tasks += hits_count_tasks_
+
+    return hits_count_tasks
+
 
 async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor, sample:bool=False) -> List[CollectTask]:
     """
@@ -55,37 +75,31 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
     for collect_action in collect_actions:
         
-        account: List[Account] = await get_accounts(collect_action)
+        accounts: List[Account] = await get_accounts(collect_action)
         search_terms: List[SearchTerm] = await get_search_terms(collect_action)
 
-        print(f'Using {len(account)} account(s)')
+        print(f'Using {len(accounts)} account(s)')
         print(f'Using {len(search_terms)} search term(s)')
 
         # Generateing hits count task here
         if sample:
-            # date_to = monitor.date_to or datetime.now()
-            # TODO end data if not None
-            date_to = datetime.now()
-            
-            # Generating hits count task for each search term
-            hits_count_tasks = []
-            for search_term in search_terms:
-                hits_count_tasks_ = split_to_tasks(account, [search_term], collect_action, monitor.date_from, date_to, sample)
-                
-                for hits_count_task in hits_count_tasks_:
-                    hits_count_task.get_hits_count = True
-                    hits_count_task.search_terms = [search_term]
+            date_to: datetime = monitor.date_to or datetime.now()
+            #TODO end data if not None
 
-                hits_count_tasks += hits_count_tasks_
+            # Generating hits count task for each search term
+            hits_count_tasks = generate_hits_count_tasks(collect_action,
+                                                        monitor,
+                                                        accounts,
+                                                        search_terms,
+                                                        date_to,
+                                                        sample)
 
             # if len(hits_count_tasks):
             #     await CollectTask.insert_many(hits_count_tasks)
-
             collect_tasks += hits_count_tasks
-            
             print(f'Generated {len(hits_count_tasks)} collect tasks for hits count')
 
-        # Generating time intervals here, 
+        # Generating time intervals here,
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
         time_intervals = get_time_intervals(collect_action, monitor, 3, sample)
