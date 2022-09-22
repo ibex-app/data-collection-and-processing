@@ -63,15 +63,17 @@ def get_query_length(collect_action: CollectAction, accounts: List[Account]) -> 
     return query_length
 
 
-def split_sources(accounts:List[Account], collect_action: CollectAction):
-    chunk_sizes = dict() 
-    chunk_sizes[Platform.facebook] = 10
-    chunk_sizes[Platform.vkontakte] = 1
-    chunk_sizes[Platform.telegram] = 1
-    chunk_sizes[Platform.youtube] = 1
-    chunk_sizes[Platform.twitter] = 3
+max_account_per_request = dict()
+max_account_per_request[Platform.facebook] = 10
+max_account_per_request[Platform.vkontakte] = 1
+max_account_per_request[Platform.telegram] = 1
+max_account_per_request[Platform.youtube] = 1
+max_account_per_request[Platform.twitter] = 3
 
-    return list(split_to_chunks(accounts, chunk_sizes[collect_action.platform]))
+def split_accounts(accounts:List[Account], collect_action: CollectAction, sample: bool):
+    global max_account_per_request
+    max_account_per_request_ = 1 if sample else max_account_per_request[collect_action.platform]
+    return list(split_to_chunks(accounts, max_account_per_request_))
 
 
 def split_complex_query(keyword, operators = boolean_operators[Platform.facebook]):
@@ -91,6 +93,13 @@ def split_complex_query(keyword, operators = boolean_operators[Platform.facebook
                 words.append(not_split)
 
     return words, statements
+
+
+def strip_and_append(all_queries, full_query, or_operator):
+    full_query_striped = full_query.lstrip(f'{or_operator}')
+    if full_query_striped != '':
+        all_queries.append(full_query_striped)
+    return all_queries
 
 
 def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, accounts: List[Account]):
@@ -114,9 +123,8 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
                 full_query = f'({single_term})'
             else:
                 full_query = full_query_
+        all_queries = strip_and_append(all_queries, full_query, operators["or_"])
         
-        full_query_striped = full_query.lstrip(f'{operators["or_"]}')
-        all_queries.append(full_query_striped)
         return all_queries
 
     operators = boolean_operators[collect_action.platform]
@@ -158,28 +166,34 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
         else:
             full_query = full_query_
 
-    full_query_striped = full_query.lstrip(f'{operators["or_"]}')
-    all_queries.append(full_query_striped)
+    all_queries = strip_and_append(all_queries, full_query, operators["or_"])
 
     return all_queries
-
 
 
 def split_queries_youtube(search_terms, collect_action, accounts):
     terms = [search_term.term for search_term in search_terms]
     replace_operators = lambda term: term.replace(' OR ', boolean_operators[Platform.youtube]["or_"]).replace(' AND ', boolean_operators[Platform.youtube]["and_"]).replace(' NOT ', boolean_operators[Platform.youtube]["not_"])
+    
     return [replace_operators(term) for term in terms]
 
 
-def split_to_tasks(accounts: List[Account], search_terms: List[SearchTerm], collect_action: CollectAction, date_from: datetime, date_to: datetime, sample: bool=False) -> List[CollectTask]:
+def split_to_tasks(accounts: List[Account], 
+                   search_terms: List[SearchTerm], 
+                   collect_action: CollectAction, 
+                   date_from: datetime, 
+                   date_to: datetime, 
+                   sample: bool=False) -> List[CollectTask]:
+
     if collect_action.platform == Platform.youtube:
         sub_queries = split_queries_youtube(search_terms, collect_action, accounts)
     else:
         sub_queries = split_queries(search_terms, collect_action, accounts)
 
-    sub_accounts = split_sources(accounts, collect_action)
-    print(f'{len(sub_queries)} sub queries created')
-    print(f'{len(sub_accounts)} sub accounts created')
+    sub_accounts = split_accounts(accounts, collect_action, sample)
+    print(f'{len(sub_queries)} sub query(i/es) created')
+    print(f'{len(sub_accounts)} sub account(s) created')
+
 
     collect_tasks:List[CollectTask] = []
     
@@ -189,15 +203,14 @@ def split_to_tasks(accounts: List[Account], search_terms: List[SearchTerm], coll
         monitor_id=collect_action.monitor_id,
         sample=sample
     )
-
     if len(sub_accounts) > 0 and len(sub_queries) > 0:
-        for sub_account in sub_accounts:
+        for sub_accounts_chunk in sub_accounts:
             for sub_query in sub_queries:
-                collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_account, query = sub_query)
+                collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_accounts_chunk, query = sub_query)
                 collect_tasks.append(collect_task)
     elif len(sub_accounts) > 0:
-        for sub_account in sub_accounts:
-            collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_account)
+        for sub_accounts_chunk in sub_accounts:
+            collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_accounts_chunk)
             collect_tasks.append(collect_task)
     elif len(sub_queries) > 0:
          for sub_query in sub_queries:

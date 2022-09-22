@@ -43,6 +43,7 @@ async def get_search_terms(collect_action: CollectAction) -> List[SearchTerm]:
     
     return await SearchTerm.find().to_list()
 
+
 def generate_hits_count_tasks(collect_action: CollectAction, 
                               monitor: Monitor,
                               accounts: List[Account],
@@ -51,16 +52,21 @@ def generate_hits_count_tasks(collect_action: CollectAction,
                               sample: bool=False) -> List[CollectTask]:
     hits_count_tasks: List[CollectTask] = []
 
-    for account in accounts:
+    if search_terms and len(search_terms) > 0:
         for search_term in search_terms:
-            hits_count_tasks_: List[CollectTask] = split_to_tasks([account], [search_term], collect_action, monitor.date_from, date_to, sample)
+            hits_count_tasks_: List[CollectTask] = split_to_tasks([accounts], [search_term], collect_action, monitor.date_from, date_to, sample)
 
             for hits_count_task in hits_count_tasks_:
                 hits_count_task.get_hits_count = True
                 hits_count_task.search_terms = [search_term]
 
             hits_count_tasks += hits_count_tasks_
+    elif accounts and len(accounts):
+        hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [], collect_action, monitor.date_from, date_to, sample)
+        for hits_count_task in hits_count_tasks_:
+            hits_count_task.get_hits_count = True
 
+        hits_count_tasks += hits_count_tasks_
     return hits_count_tasks
 
 
@@ -98,7 +104,6 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
             #     await CollectTask.insert_many(hits_count_tasks)
             collect_tasks += hits_count_tasks
             print(f'Generated {len(hits_count_tasks)} collect tasks for hits count')
-
         # Generating time intervals here,
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
@@ -112,7 +117,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # .. ]
 
         for (date_from, date_to) in time_intervals:
-            collect_tasks += split_to_tasks(account, search_terms, collect_action, date_from, date_to, sample)
+            collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, sample)
             print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
         
                 
@@ -123,6 +128,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
             await collect_action.save()
 
     print(f'{len(collect_tasks)} collect tasks created...')
+
     if len(collect_tasks):
         print(f'saving {len(collect_tasks)} collect casts')
         if sample:
