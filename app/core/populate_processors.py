@@ -3,7 +3,7 @@ from typing import List
 from beanie.odm.operators.find.comparison import In
 from celery import chain, group
 from uuid import UUID
-from ibex_models import Processor, Post, MediaStatus, ProcessTask
+from ibex_models import Processor, Post, MediaStatus, ProcessTask, ProcessTaskBatch
 from app.util.model_utils import serialize_to_base64
 
 
@@ -23,6 +23,12 @@ async def get_processor_tasks(monitor_id:UUID):
 
     # process_tasks.append(ProcessTask(processor=Processor.detect_search_terms, monitor_id=monitor_id))
     # print(f'single tasks_for_detect_search_terms process tasks created... for monitor {monitor_id}')
+
+    for post in posts:
+        process_tasks.append(ProcessTask(post=post, processor=Processor.hate_speech, monitor_id=monitor_id))
+    print(f'single tasks_for_hate_speech process tasks created... for monitor {monitor_id}')
+    
+    process_tasks.append(ProcessTaskBatch(processor=Processor.top_engagement, monitor_id=monitor_id))
 
 
     tasks_group = []
