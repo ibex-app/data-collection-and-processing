@@ -8,6 +8,7 @@ from app.core.datasources.datasource import Datasource
 from app.config.aop_config import slf, sleep_after
 from app.core.split import split_complex_query
 from eldar import Query
+from app.core.datasources.utils import add_search_terms_to_posts
 
 @slf
 class TelegramCollector(Datasource):
@@ -141,6 +142,7 @@ class TelegramCollector(Datasource):
                 break
         
         maped_posts = self.map_to_posts(posts, collect_task)
+        posts = await add_search_terms_to_posts(posts, collect_task.monitor_id)
         print(f'[Telegram] {len(maped_posts)} posts collected from dialog: {dialog_name}')
         
         await self.client.disconnect()
