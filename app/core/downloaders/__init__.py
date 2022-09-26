@@ -10,5 +10,5 @@ downloader_classes = {
     Platform.twitter: TwitterDownloader,
     Platform.facebook: FacebookDownloader,
     Platform.youtube: YoutubeDownloader,
-    Platform.geotv: TVGeorgiaDownloader,
+    # Platform.geotv: TVGeorgiaDownloader,
 }

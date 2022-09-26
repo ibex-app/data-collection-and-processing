@@ -54,7 +54,7 @@ def generate_hits_count_tasks(collect_action: CollectAction,
 
     if search_terms and len(search_terms) > 0:
         for search_term in search_terms:
-            hits_count_tasks_: List[CollectTask] = split_to_tasks([accounts], [search_term], collect_action, monitor.date_from, date_to, sample)
+            hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [search_term], collect_action, monitor.date_from, date_to, sample)
 
             for hits_count_task in hits_count_tasks_:
                 hits_count_task.get_hits_count = True
