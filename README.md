@@ -26,7 +26,9 @@ pip install -r requirements.txt
 ```
 5. Set up a message redis broker for selery (wollow the instructions here https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/redis.html#broker-redis) 
 
-6. Run the celery worker:
+6. Set celery parameters in `app/config/constants.py`
+
+7. Run the celery worker:
 ```
 celery -A app.core.celery.worker worker -l info
 ```
@@ -36,7 +38,7 @@ Note, that Celery does not support **Windows**, so you should probably include
 ```
 to avoid any unnecessary errors (for testing only).
 
-7. Run data collectino process:
+8. Run data collectino process:
 ```
 python main.py --monitor_id=XXXXXXXXXXXXXX
 ```

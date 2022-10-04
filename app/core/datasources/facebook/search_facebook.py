@@ -41,7 +41,8 @@ class FacebookCollector:
             token=self.token,
             startDate=collect_task.date_from.isoformat(),
             endDate=collect_task.date_to.isoformat(),
-            count=self.max_posts_per_call_
+            count=self.max_posts_per_call_,
+            sortBy='overperforming' if collect_task.sample else 'date'
         )
         
         if collect_task.query is not None and len(collect_task.query) > 0:

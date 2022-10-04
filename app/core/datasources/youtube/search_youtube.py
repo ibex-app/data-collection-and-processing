@@ -128,7 +128,7 @@ class YoutubeCollector:
 
 
     @staticmethod
-    @sleep_after(tag='YouTube')
+    @sleep_after(tag='YouTube', pause_time=4)
     def _youtube_search(params):
         res = requests.get("https://youtube.googleapis.com/youtube/v3/search",
             params=params)
@@ -136,7 +136,7 @@ class YoutubeCollector:
 
 
     @staticmethod
-    @sleep_after(tag='YouTube')
+    @sleep_after(tag='YouTube', pause_time=4)
     def _youtube_details(params):
         res = requests.get("https://www.googleapis.com/youtube/v3/videos", params=params)
         return res

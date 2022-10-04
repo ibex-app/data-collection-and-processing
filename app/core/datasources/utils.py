@@ -40,14 +40,18 @@ def get_query_with_declancions(keyword):
 
 
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
-    if not collect_task.search_terms: return posts
-    if len(collect_task.search_terms) == 0: return posts
-    eldar = Query(collect_task.query)
+    if not collect_task.query: return posts
+    log.info(f'[ValidatePostsByQuery] query {collect_task.query}')
+    eldar = Query(collect_task.query, ignore_case=True, ignore_accent=False)
     posts_ = []
     for post in posts:
         text: str = f'{post.title} {post.text}'
+        # log.info(f'[ValidatePostsByQuery] text {text}')
         if not text: continue
-        if len(eldar.filter([text])) == 0: continue
+        query_search_result = eldar.filter([text])
+        # log.info(f'[ValidatePostsByQuery] query_search_result {query_search_result}')
+        # log.info(f'[ValidatePostsByQuery] query_search_result len {len(query_search_result)}')
+        if len(query_search_result) == 0: continue
         posts_.append(post)
     return posts_
 

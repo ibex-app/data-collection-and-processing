@@ -44,13 +44,16 @@ if __name__ == '__main__':
     parser.add_argument('--monitor_id', type=str, help='Monitor id to run data collection for', required=True )
     parser.add_argument('--download_media', type=str, help='If True, video content is downloaded', required=False )
     parser.add_argument('--skip_collection', type=str, help='Skipping data collection, to apply processors on collected data', required=False )
-    parser.add_argument('--sample', type=bool, help='If True, sample data is collected', required=False, default=False)
-    
+    parser.add_argument('--sample', action='store_true', help='If True, sample data is collected', required=False, default=False)
+
+
     args = parser.parse_args()
     
     monitor_id = UUID(getattr(args, 'monitor_id'))
     sample = getattr(args, 'sample')
     download_media = getattr(args, 'download_media')
+
+    print(f'Running data collection fo monitor_id {monitor_id}, download_media: {download_media}, sample: {sample} ')
     
     asyncio.run(run_collector_tasks(monitor_id, sample))
     if download_media and not sample:

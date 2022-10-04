@@ -13,6 +13,7 @@ from app.core.dao.post_dao import insert_posts
 
 from ibex_models import CollectTask, Post, CollectTaskStatus
 from app.config.mongo_config import init_mongo
+from time import sleep
 
 @celery.task(name='app.core.celery.tasks.collect')
 def collect(collect_task: str):
@@ -21,7 +22,6 @@ def collect(collect_task: str):
     :param task: base64 encoded CollectTask instance.
     :return:
     """
-
     collect_task: CollectTask = deserialize_from_base64(collect_task)
     if collect_task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{collect_task.platform}] found! skipping..")
