@@ -8,7 +8,7 @@ from celery import chain, group
 from app.config.logging_config import log
 from app.util.model_utils import serialize_to_base64
 from app.core.dao.collect_actions_dao import get_collect_actions
-from ibex_models import CollectAction, CollectTask, Account, SearchTerm, Platform, Monitor
+from ibex_models import CollectAction, CollectTask, Account, SearchTerm, Platform, Monitor, CollectTaskStatus
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
@@ -102,8 +102,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
             # if len(hits_count_tasks):
             #     await CollectTask.insert_many(hits_count_tasks)
-            collect_tasks += hits_count_tasks
             print(f'Generated {len(hits_count_tasks)} collect tasks for hits count')
+            collect_tasks += hits_count_tasks
         # Generating time intervals here,
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
@@ -130,9 +130,11 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     print(f'{len(collect_tasks)} collect tasks created...')
 
     if len(collect_tasks):
-        print(f'saving {len(collect_tasks)} collect casts')
+        unique_collect_tasks = await deduplicate(collect_tasks, monitor)
+        print(f'saving {len(unique_collect_tasks)} collect casts')
         if sample:
-            print(f'from that {len(hits_count_tasks)} hits count collect tasks')
+            print(f'from that {len([_ for _ in unique_collect_tasks if _.hits_count_tasks])} hits count collect tasks')
+        
         await CollectTask.insert_many(collect_tasks)
 
     # print(collect_tasks)
@@ -148,4 +150,43 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
     return task_group
 
+def sampling_tasks_match(task_1: CollectTask, task_2: CollectTask) -> bool:
+    if not task_1 or not task_2: return False
+    if not task_1.sample and not task_2.sample and not task_1.get_hits_count and task_2.get_hits_count: return False
+    if (task_1.sample and not task_2.sample) or (not task_1.sample and task_2.sample): return False
+    if (task_1.get_hits_count and not task_2.get_hits_count) or (not task_1.get_hits_count and task_2.get_hits_count): return False
 
+    if task_1.accounts and task_2.accounts and len(task_1.accounts) and len(task_2.accounts) \
+        and task_1.accounts[0].id == task_2.accounts[0].id: return True
+    if task_1.search_terms and task_2.search_terms and len(task_1.search_terms) and len(task_2.search_terms) \
+        and task_1.search_terms[0].id == task_2.search_terms[0].id: return True
+    
+    return False
+
+async def deduplicate(collect_tasks: List[CollectTask], monitor: Monitor) -> List[CollectTask]:
+    # All colect tasks should be for the same monitor_id
+    if not collect_tasks: return
+    if len(collect_tasks) == 0: return []
+
+    #TODO mongopy $or: operator between CollectTask.sample and CollectTask.get_hits_count
+    finalized_sampling_tasks = await CollectTask.find(CollectTask.sample is True,
+                                                CollectTask.monitor_id == monitor.id,
+                                                CollectTask.status == CollectTaskStatus.finalized).to_list()
+    finalized_hits_count_tasks = await CollectTask.find(CollectTask.get_hits_count is True,
+                                                CollectTask.monitor_id == monitor.id,
+                                                CollectTask.status == CollectTaskStatus.finalized).to_list()
+    finalized_tasks =   finalized_sampling_tasks + finalized_hits_count_tasks
+
+    deduplicated_tasks = []
+
+    for collect_task in collect_tasks:
+        if not collect_task.sample and not collect_task.get_hits_count:
+            deduplicated_tasks.append(collect_task)
+            continue
+        
+        if (collect_task.search_terms and len(collect_task.search_terms)) or  (collect_task.accounts and len(collect_task.accounts)):
+            if not len(filter(lambda finalized_task : sampling_tasks_match(collect_task, finalized_task), finalized_tasks)) > 0:
+                deduplicated_tasks.append(collect_task)
+                continue
+    
+    return deduplicated_tasks
