@@ -9,6 +9,7 @@ from app.core.populate_downloaders import get_downloader_tasks
 from app.core.populate_processors import get_processor_tasks
 
 from app.config.mongo_config import init_mongo
+from ibex_models.monitor import Monitor, MonitorStatus
 
 
 async def run_collector_tasks(monitor_id:UUID, sample:bool):
@@ -18,6 +19,11 @@ async def run_collector_tasks(monitor_id:UUID, sample:bool):
         return
     g = group(collector_tasks)
     g.delay().get()
+
+    monitor = await Monitor.get(monitor_id)
+    monitor.status = MonitorStatus.sampled
+    await monitor.save()
+    print(f'collection complated, monitor_id, sample : {monitor_id}, {sample}')
 
 
 async def run_downloader_tasks(monitor_id:UUID):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from beanie.odm.operators.find.comparison import In
@@ -89,7 +89,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
         # Generateing hits count task here
         if sample:
-            date_to: datetime = monitor.date_to or datetime.now()
+            date_to: datetime = monitor.date_to or datetime.now() - timedelta(hours=5)
             #TODO end data if not None
 
             # Generating hits count task for each search term
@@ -133,7 +133,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         unique_collect_tasks = await deduplicate(collect_tasks, monitor)
         print(f'saving {len(unique_collect_tasks)} collect casts')
         if sample:
-            print(f'from that {len([_ for _ in unique_collect_tasks if _.hits_count_tasks])} hits count collect tasks')
+            print(f'from that {len([_ for _ in unique_collect_tasks if _.get_hits_count])} hits count collect tasks')
         
         await CollectTask.insert_many(collect_tasks)
 
@@ -169,10 +169,10 @@ async def deduplicate(collect_tasks: List[CollectTask], monitor: Monitor) -> Lis
     if len(collect_tasks) == 0: return []
 
     #TODO mongopy $or: operator between CollectTask.sample and CollectTask.get_hits_count
-    finalized_sampling_tasks = await CollectTask.find(CollectTask.sample is True,
+    finalized_sampling_tasks = await CollectTask.find(CollectTask.sample == True,
                                                 CollectTask.monitor_id == monitor.id,
                                                 CollectTask.status == CollectTaskStatus.finalized).to_list()
-    finalized_hits_count_tasks = await CollectTask.find(CollectTask.get_hits_count is True,
+    finalized_hits_count_tasks = await CollectTask.find(CollectTask.get_hits_count == True,
                                                 CollectTask.monitor_id == monitor.id,
                                                 CollectTask.status == CollectTaskStatus.finalized).to_list()
     finalized_tasks =   finalized_sampling_tasks + finalized_hits_count_tasks
@@ -185,7 +185,7 @@ async def deduplicate(collect_tasks: List[CollectTask], monitor: Monitor) -> Lis
             continue
         
         if (collect_task.search_terms and len(collect_task.search_terms)) or  (collect_task.accounts and len(collect_task.accounts)):
-            if not len(filter(lambda finalized_task : sampling_tasks_match(collect_task, finalized_task), finalized_tasks)) > 0:
+            if not len(list(filter(lambda finalized_task : sampling_tasks_match(collect_task, finalized_task), finalized_tasks))) > 0:
                 deduplicated_tasks.append(collect_task)
                 continue
     

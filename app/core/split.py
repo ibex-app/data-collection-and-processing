@@ -232,6 +232,7 @@ def get_last_collection_date(collect_action: CollectAction):
 def get_time_intervals(collect_action: CollectAction, monitor: Monitor, number_of_intervals:int = 5, sample: bool = False) -> List[Tuple[datetime, datetime]]:
     if sample:
         date_from = monitor.date_from
+        #TODO fixed date to case
         date_to = datetime.now()  - timedelta(hours=5) #monitor.date_to
     else:
         date_from = get_last_collection_date(collect_action)
@@ -240,8 +241,8 @@ def get_time_intervals(collect_action: CollectAction, monitor: Monitor, number_o
     intervals = []
     if sample:
         for i in range(number_of_intervals):
-            rand_date = random_date_between(date_from, date_to - timedelta(hours=5))
-            intervals.append((rand_date, rand_date + timedelta(hours=5)))
+            rand_date = random_date_between(date_from, date_to)
+            intervals.append((rand_date, date_to))
     else:
         intervals.append((date_from, date_to))
 
