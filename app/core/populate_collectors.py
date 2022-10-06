@@ -16,7 +16,8 @@ from uuid import UUID
 
 async def get_collector_tasks(monitor_id:UUID, sample: bool = False) -> List[chain or group]:
     if sample:
-        await CollectTask.find(CollectTask.monitor_id == monitor_id).delete()
+        # await CollectTask.find(CollectTask.monitor_id == monitor_id).delete()
+        pass
     
     monitor = await Monitor.find_one(Monitor.id == monitor_id)
     collect_actions: List[CollectAction] = await get_collect_actions(monitor_id)
@@ -152,14 +153,14 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
 def sampling_tasks_match(task_1: CollectTask, task_2: CollectTask) -> bool:
     if not task_1 or not task_2: return False
-    if not task_1.sample and not task_2.sample and not task_1.get_hits_count and task_2.get_hits_count: return False
-    if (task_1.sample and not task_2.sample) or (not task_1.sample and task_2.sample): return False
-    if (task_1.get_hits_count and not task_2.get_hits_count) or (not task_1.get_hits_count and task_2.get_hits_count): return False
-
+    if (not task_1.sample and not task_2.sample) and (not task_1.get_hits_count and not task_2.get_hits_count): return False
+    
+    # print('comparing', task_1, task_2)
     if task_1.accounts and task_2.accounts and len(task_1.accounts) and len(task_2.accounts) \
-        and task_1.accounts[0].id == task_2.accounts[0].id: return True
+        and task_1.accounts[0].platform == task_2.accounts[0].platform \
+        and task_1.accounts[0].platform_id == task_2.accounts[0].platform_id : return True
     if task_1.search_terms and task_2.search_terms and len(task_1.search_terms) and len(task_2.search_terms) \
-        and task_1.search_terms[0].id == task_2.search_terms[0].id: return True
+        and task_1.search_terms[0].term == task_2.search_terms[0].term: return True
     
     return False
 
@@ -175,18 +176,24 @@ async def deduplicate(collect_tasks: List[CollectTask], monitor: Monitor) -> Lis
     finalized_hits_count_tasks = await CollectTask.find(CollectTask.get_hits_count == True,
                                                 CollectTask.monitor_id == monitor.id,
                                                 CollectTask.status == CollectTaskStatus.finalized).to_list()
-    finalized_tasks =   finalized_sampling_tasks + finalized_hits_count_tasks
+    finalized_tasks = finalized_sampling_tasks + finalized_hits_count_tasks
 
     deduplicated_tasks = []
 
+    # print('finalized_tasks', len(finalized_tasks))
     for collect_task in collect_tasks:
-        if not collect_task.sample and not collect_task.get_hits_count:
+        # print('deduplicated_tasks', len(deduplicated_tasks))
+        # TODO check sample 
+        if not collect_task.get_hits_count and collect_task.sample:
+            # print('uppending... not hits count')
             deduplicated_tasks.append(collect_task)
             continue
+        if collect_task.get_hits_count or collect_task.sample:
+            if (collect_task.search_terms and len(collect_task.search_terms)) or (collect_task.accounts and len(collect_task.accounts)):
+                # print(collect_task)
+                if not len(list(filter(lambda finalized_task : sampling_tasks_match(collect_task, finalized_task), finalized_tasks))) > 0:
+                    print('appending not duplicate')
+                    deduplicated_tasks.append(collect_task)
+                    continue
         
-        if (collect_task.search_terms and len(collect_task.search_terms)) or  (collect_task.accounts and len(collect_task.accounts)):
-            if not len(list(filter(lambda finalized_task : sampling_tasks_match(collect_task, finalized_task), finalized_tasks))) > 0:
-                deduplicated_tasks.append(collect_task)
-                continue
-    
     return deduplicated_tasks
