@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+from functools import cache
 
 from typing import List
 
@@ -48,15 +49,19 @@ async def set_task_status(collect_task: CollectTask, collect_task_status: Collec
 
 async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: CollectTask):
     await init_mongo()
-    hits_count: int = await collector_method(collect_task)
     collect_task_ = await CollectTask.get(collect_task.id)
+    
+    try:
+        hits_count: int = await collector_method(collect_task)
+        collect_task_.hits_count = hits_count
+        collect_task_.status = CollectTaskStatus.finalized
+    except:
+        collect_task_.status = CollectTaskStatus.failed
 
     if not collect_task_: 
         raise KeyError(f'collect_task was not found for {collect_task.platform}, {collect_task.id}')
 
-    collect_task_.hits_count = hits_count
-    collect_task_.sample = False
-    collect_task_.status = CollectTaskStatus.finalized
+    
     await collect_task_.save()
 
 
@@ -73,15 +78,17 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
     await init_mongo()
 
 
-    # execute collect action
-    collected_posts: List[Post] = await collector_method(collect_task)
-    
-    for post in collected_posts:
-        post.monitor_ids = [collect_task.monitor_id]
-
-    count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
     collect_task_ = await CollectTask.get(collect_task.id)
-    collect_task_.status = CollectTaskStatus.finalized
+    try:
+        collected_posts: List[Post] = await collector_method(collect_task)
+        
+        for post in collected_posts:
+            post.monitor_ids = [collect_task.monitor_id]
+
+        count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
+        collect_task_.status = CollectTaskStatus.finalized
+    except:
+        collect_task_.status = CollectTaskStatus.failed
     await collect_task_.save()
 
     print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
