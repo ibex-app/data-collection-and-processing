@@ -8,6 +8,8 @@ from app.core.declensions import get_declensions
 from app.config.logging_config import log
 from uuid import UUID
 
+from ibex_models.platform import Platform
+
 async def update_hits_count(collect_task: CollectTask, hits_count: int):
     collect_task_ = await CollectTask.find(CollectTask.id == collect_task.id)
 
@@ -41,8 +43,15 @@ def get_query_with_declancions(keyword):
 
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
     if not collect_task.query: return posts
-    log.info(f'[ValidatePostsByQuery] query {collect_task.query}')
-    eldar = Query(collect_task.query, ignore_case=True, ignore_accent=False)
+    query = collect_task.query
+    if collect_task.platform == Platform.twitter:
+        query = query.replace(') (', ') AND (').replace(') -(', ') NOT (')
+    elif collect_task.platform == Platform.youtube:
+        query = query.replace('" "', '" AND "').replace('"|"', '" OR "').replace('" -"', '" NOT "')
+
+    log.info(f'[ValidatePostsByQuery] query {query}')
+
+    eldar = Query(query, ignore_case=True, ignore_accent=False)
     posts_ = []
     for post in posts:
         text: str = f'{post.title} {post.text}'
@@ -71,9 +80,11 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
         for post in posts:
             post.search_terms_ids = post.search_terms_ids or []
             text: str = f'{post.title} {post.text}'
+            # print('[DetectSearchTerm]', ' '.join(text.splitlines()))
             if post.transcripts and len(post.transcripts):
-                    text += ' '.join([transcript.text for transcript in post.transcripts])
+                text += ' '.join([transcript.text for transcript in post.transcripts])
             if not text: continue
+            # print('[DetectSearchTerm] eldar ', len(eldar_query.filter([text])))
             if len(eldar_query.filter([text])) == 0: continue
             if search_term.id not in post.search_terms_ids: post.search_terms_ids.append(search_term.id)
     

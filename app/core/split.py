@@ -173,7 +173,7 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
 
 def split_queries_youtube(search_terms, collect_action, accounts):
     terms = [search_term.term for search_term in search_terms]
-    replace_operators = lambda term: term.replace(' OR ', boolean_operators[Platform.youtube]["or_"]).replace(' AND ', boolean_operators[Platform.youtube]["and_"]).replace(' NOT ', boolean_operators[Platform.youtube]["not_"])
+    replace_operators = lambda term: '"' + term.replace(' OR ', f'"{boolean_operators[Platform.youtube]["or_"]}"').replace(' AND ', f'"{boolean_operators[Platform.youtube]["and_"]}"').replace(' NOT ', boolean_operators[Platform.youtube]["not_"]) + '"'
     
     return [replace_operators(term) for term in terms]
 
@@ -220,23 +220,9 @@ def split_to_tasks(accounts: List[Account],
     return collect_tasks
 
 
-def get_last_collection_date(collect_action: CollectAction):
-    if collect_action.last_collection_date is None:
-        return datetime.now() - timedelta(days=1)
-    if collect_action.last_collection_date < datetime.now() - timedelta(days=5):
-        return datetime.now() - timedelta(days=5)
-    
-    return collect_action.last_collection_date 
 
-
-def get_time_intervals(collect_action: CollectAction, monitor: Monitor, number_of_intervals:int = 5, sample: bool = False) -> List[Tuple[datetime, datetime]]:
-    if sample:
-        date_from = monitor.date_from
-        #TODO fixed date to case
-        date_to = datetime.now()  - timedelta(hours=5) #monitor.date_to
-    else:
-        date_from = get_last_collection_date(collect_action)
-        date_to = datetime.now()  - timedelta(hours=5)
+def get_time_intervals(collect_action: CollectAction, monitor: Monitor, date_to: datetime, number_of_intervals:int = 5, sample: bool = False) -> List[Tuple[datetime, datetime]]:
+    date_from = monitor.date_from if collect_action.last_collection_date is None else collect_action.last_collection_date 
 
     intervals = []
     if sample:

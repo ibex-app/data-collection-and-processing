@@ -163,7 +163,7 @@ class TwitterCollector:
         return hits_count
 
 
-    # @sleep_after(tag='Twitter')
+    @sleep_after(tag='Twitter')
     def _collect_tweets_by_rule(self, rule):
         return collect_results(rule, max_tweets=self.max_posts_per_call_, result_stream_args=self.search_args)
 
@@ -176,12 +176,12 @@ class TwitterCollector:
         return rule
 
 
-    def _collect(self, params):
+    def _collect(self, rule):
         tweets = []
         
         count_requests = 0
         while True:
-            twts = self._collect_tweets_by_rule(params)
+            twts = self._collect_tweets_by_rule(rule)
             tweets += twts
             if len(twts) == 0 or len(tweets) == 0:
                 self.log.warn(f'[Twitter] something went wrong - api response is empty, breaking loop..')

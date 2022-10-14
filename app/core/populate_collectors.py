@@ -89,8 +89,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         print(f'Using {len(search_terms)} search term(s)')
 
         # Generateing hits count task here
+        date_to: datetime = monitor.date_to or datetime.now() - timedelta(hours=5)
         if sample:
-            date_to: datetime = monitor.date_to or datetime.now() - timedelta(hours=5)
             #TODO end data if not None
 
             # Generating hits count task for each search term
@@ -108,7 +108,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # Generating time intervals here,
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
-        time_intervals = get_time_intervals(collect_action, monitor, 3, sample)
+        time_intervals = get_time_intervals(collect_action, monitor, date_to, 3, sample)
         # [2021-01-01    -  2021-03-01]
 
         # [2021-01-07    -  2021-01-07,
@@ -116,7 +116,9 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # 2021-01-01    -  2021-03-01,
         # 2021-01-01    -  2021-03-01,
         # .. ]
+        print(f'{len(time_intervals)} time intervals created...', time_intervals)
 
+        # TODO create time intervals for actual data collection depending on posts count
         for (date_from, date_to) in time_intervals:
             collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, sample)
             print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')

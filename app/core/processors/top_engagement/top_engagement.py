@@ -42,9 +42,9 @@ class TopEngagementProcessor:
                         break
                     outs[platform].append(post)
         
-        for k,v in outs.items():
-            if len(v) > 0:
-                with codecs.open(prefix+'%s_%s.csv' % (k, task.monitor_id),'w', encoding='utf-8') as f:
-                    w=csv.DictWriter(f, fieldnames=list(v[0].keys()))
-                    w.writeheader()
-                    w.writerows(v)
+        # for k,v in outs.items():
+        #     if len(v) > 0:
+        #         with codecs.open(prefix+'%s_%s.csv' % (k, task.monitor_id),'w', encoding='utf-8') as f:
+        #             w=csv.DictWriter(f, fieldnames=list(v[0].keys()))
+        #             w.writeheader()
+        #             w.writerows(v)
