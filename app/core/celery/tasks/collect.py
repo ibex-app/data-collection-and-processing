@@ -1,7 +1,5 @@
 from __future__ import annotations
 import asyncio
-from functools import cache
-
 from typing import List
 
 from app.config.logging_config import log

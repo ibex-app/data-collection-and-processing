@@ -206,7 +206,10 @@ def split_to_tasks(accounts: List[Account],
     if len(sub_accounts) > 0 and len(sub_queries) > 0:
         for sub_accounts_chunk in sub_accounts:
             for sub_query in sub_queries:
-                collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_accounts_chunk, query = sub_query)
+                collect_task: CollectTask = CollectTask(**collect_task_dict, 
+                                                        accounts = sub_accounts_chunk, 
+                                                        account_ids = [_.id for _ in sub_accounts_chunk], 
+                                                        query = sub_query)
                 collect_tasks.append(collect_task)
     elif len(sub_accounts) > 0:
         for sub_accounts_chunk in sub_accounts:

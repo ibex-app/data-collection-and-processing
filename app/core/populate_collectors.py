@@ -3,12 +3,14 @@ from datetime import datetime, timedelta
 from typing import List
 
 from beanie.odm.operators.find.comparison import In
+from beanie.odm.operators.find.element import Exists
 from celery import chain, group
 
 from app.config.logging_config import log
 from app.util.model_utils import serialize_to_base64
 from app.core.dao.collect_actions_dao import get_collect_actions
-from ibex_models import CollectAction, CollectTask, Account, SearchTerm, Platform, Monitor, CollectTaskStatus
+from ibex_models import CollectAction, CollectTask, Account, SearchTerm, Platform, Monitor, CollectTaskStatus, collect_task
+from app.config.mongo_config import DBConstants 
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
@@ -60,13 +62,14 @@ def generate_hits_count_tasks(collect_action: CollectAction,
             for hits_count_task in hits_count_tasks_:
                 hits_count_task.get_hits_count = True
                 hits_count_task.search_terms = [search_term]
+                hits_count_task.search_term_ids = [search_term.id]
 
             hits_count_tasks += hits_count_tasks_
     elif accounts and len(accounts):
         hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [], collect_action, monitor.date_from, date_to, sample)
         for hits_count_task in hits_count_tasks_:
             hits_count_task.get_hits_count = True
-
+            
         hits_count_tasks += hits_count_tasks_
     return hits_count_tasks
 
@@ -79,7 +82,11 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     """
     task_group = []
     collect_tasks: List[CollectTask] = [] 
-
+    if sample:
+        finalized_hits_count_ids = await get_collected_hits_count_ids(monitor)
+        finalized_samplings_ids = await get_sampled_ids(monitor)
+        print('finalized_hits_count_ids', finalized_hits_count_ids)
+        print('finalized_samplings_ids', finalized_samplings_ids)
     for collect_action in collect_actions:
         
         accounts: List[Account] = await get_accounts(collect_action)
@@ -91,13 +98,14 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # Generateing hits count task here
         date_to: datetime = monitor.date_to or datetime.now() - timedelta(hours=5)
         if sample:
-            #TODO end data if not None
-
+            accounts_for_hits_count, search_terms_for_hits_count = remove_collected_samples(collect_action, accounts, search_terms, finalized_hits_count_ids)
             # Generating hits count task for each search term
+            print(f'Using {len(accounts_for_hits_count)} new account(s) for hits count')
+            print(f'Using {len(search_terms_for_hits_count)} new search term(s) for hits count')
             hits_count_tasks = generate_hits_count_tasks(collect_action,
                                                         monitor,
-                                                        accounts,
-                                                        search_terms,
+                                                        accounts_for_hits_count,
+                                                        search_terms_for_hits_count,
                                                         date_to,
                                                         sample)
 
@@ -120,6 +128,10 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
         # TODO create time intervals for actual data collection depending on posts count
         for (date_from, date_to) in time_intervals:
+            if sample:
+                accounts, search_terms = remove_collected_samples(collect_action, accounts, search_terms, finalized_samplings_ids)
+                print(f'Using {len(accounts)} new account(s) for sampling')
+                print(f'Using {len(search_terms)} new search term(s) for sampling')
             collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, sample)
             print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
         
@@ -133,10 +145,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     print(f'{len(collect_tasks)} collect tasks created...')
 
     if len(collect_tasks):
-        unique_collect_tasks = await deduplicate(collect_tasks, monitor)
-        print(f'saving {len(unique_collect_tasks)} collect casts')
         if sample:
-            print(f'from that {len([_ for _ in unique_collect_tasks if _.get_hits_count])} hits count collect tasks')
+            print(f'from that {len([_ for _ in collect_tasks if _.get_hits_count])} hits count collect tasks')
         
         await CollectTask.insert_many(collect_tasks)
 
@@ -166,36 +176,59 @@ def sampling_tasks_match(task_1: CollectTask, task_2: CollectTask) -> bool:
     
     return False
 
-async def deduplicate(collect_tasks: List[CollectTask], monitor: Monitor) -> List[CollectTask]:
-    # All colect tasks should be for the same monitor_id
-    if not collect_tasks: return
-    if len(collect_tasks) == 0: return []
+async def remove_collected_hits_counts(cllect_action:CollectAction, accounts:List[Account], search_terms:List[SearchTerm], sampled_ids):
+    new_accounts_hits_count = [_ for _ in accounts if _.id not in sampled_ids[cllect_action.platform]['account_ids']]
+    new_search_terms_hits_count = [_ for _ in search_terms if _.id not in sampled_ids[cllect_action.platform]['search_term_ids']]
 
-    #TODO mongopy $or: operator between CollectTask.sample and CollectTask.get_hits_count
-    finalized_sampling_tasks = await CollectTask.find(CollectTask.sample == True,
-                                                CollectTask.monitor_id == monitor.id,
-                                                CollectTask.status == CollectTaskStatus.finalized).to_list()
+    return new_accounts_hits_count, new_search_terms_hits_count
+
+import pymongo
+from uuid import UUID
+from itertools import chain
+
+async def get_sampled_ids(monitor:Monitor):
+    client = pymongo.MongoClient(DBConstants.connection_string)
+    mydb = client["ibex"]
+    posts_collection = mydb["posts"]
+    collect_tasks_for_accounts = await CollectTask.find(CollectTask.monitor_id == monitor.id,
+                                                        Exists(CollectTask.accounts, True),
+                                                        CollectTask.sample == True,
+                                                        CollectTask.status == CollectTaskStatus.finalized).to_list()
+
+    sampled_ids = {}
+    for platform in monitor.platforms:
+        sampled_ids[platform] = {}
+        collect_tasks_for_accounts_ = chain.from_iterable([_.account_ids for _ in collect_tasks_for_accounts if _.platform == platform and _.account_ids])
+        sampled_ids[platform]['account_ids'] = list(set([_.id for _ in collect_tasks_for_accounts_]))
+
+        query = {
+            'monitor_ids': {'$in': [monitor.id]},
+            'platform': platform
+        }
+        search_terms_ids = posts_collection.find(query, { "search_terms_ids": 1, "_id": 0})
+        sampled_ids[platform]['search_term_ids'] = list(set(chain.from_iterable([_['search_terms_ids'] for _ in search_terms_ids])))
+
+    return sampled_ids
+
+async def get_collected_hits_count_ids(monitor:Monitor):
+    
     finalized_hits_count_tasks = await CollectTask.find(CollectTask.get_hits_count == True,
                                                 CollectTask.monitor_id == monitor.id,
                                                 CollectTask.status == CollectTaskStatus.finalized).to_list()
-    finalized_tasks = finalized_sampling_tasks + finalized_hits_count_tasks
+    sampled_ids = {}
+    for platform in monitor.platforms:
+        sampled_ids[platform] = {}
 
-    deduplicated_tasks = []
+        sampled_ids[platform]['account_ids'] = list(set(chain.from_iterable([_.account_ids for _ in finalized_hits_count_tasks if _.platform == platform  and _.account_ids])))
+        sampled_ids[platform]['search_term_ids'] = list(set(chain.from_iterable([_.search_term_ids for _ in finalized_hits_count_tasks if _.platform == platform and _.search_term_ids])))
 
-    # print('finalized_tasks', len(finalized_tasks))
-    for collect_task in collect_tasks:
-        # print('deduplicated_tasks', len(deduplicated_tasks))
-        # TODO check sample 
-        if not collect_task.get_hits_count and collect_task.sample:
-            # print('uppending... not hits count')
-            deduplicated_tasks.append(collect_task)
-            continue
-        if collect_task.get_hits_count or collect_task.sample:
-            if (collect_task.search_terms and len(collect_task.search_terms)) or (collect_task.accounts and len(collect_task.accounts)):
-                # print(collect_task)
-                if not len(list(filter(lambda finalized_task : sampling_tasks_match(collect_task, finalized_task), finalized_tasks))) > 0:
-                    print('appending not duplicate')
-                    deduplicated_tasks.append(collect_task)
-                    continue
-        
-    return deduplicated_tasks
+    return sampled_ids
+    # search_term_ids_already_collected = [_.search_terms[0].id for _ in finalized_hits_count_tasks if _.search_terms and len(_.search_terms)]
+    # account_ids_already_collected = [_.accounts[0].id for _ in finalized_hits_count_tasks if _.accounts and len(_.accounts)]
+    # pass
+
+def remove_collected_samples(collect_action: CollectAction, accounts:List[Account], search_terms:List[SearchTerm], finalized_samplings):
+    accounts = [_ for _ in accounts if _.id not in finalized_samplings[collect_action.platform]['account_ids']]
+    search_terms = [_ for _ in search_terms if _.id not in finalized_samplings[collect_action.platform]['search_term_ids']]
+
+    return accounts, search_terms

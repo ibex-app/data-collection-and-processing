@@ -37,8 +37,8 @@ def get_query_with_declancions(keyword):
                 words_decls.append(word)
         full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
 
-    # print(f'[DetectSearchTerm] full_term for {keyword} : {full_term} ')
-    return Query(full_term)
+    print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
+    return Query(full_term, ignore_accent=False)
 
 
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
@@ -71,21 +71,24 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
     else:
         search_terms = await SearchTerm.find().to_list()
 
-    log.info(f'[DetectSearchTerm] {len(search_terms)} total search terms in monitor')
+    log.info(f'[AddSearchRermsToPosts] {len(search_terms)} total search terms in monitor')
 
     # TODO use subprocesses here
     for search_term in search_terms:
         eldar_query = get_query_with_declancions(search_term.term)
+        # print('[AddSearchRermsToPosts] query', eldar_query)
         
         for post in posts:
             post.search_terms_ids = post.search_terms_ids or []
             text: str = f'{post.title} {post.text}'
-            # print('[DetectSearchTerm]', ' '.join(text.splitlines()))
+            # print('[AddSearchRermsToPosts] text', ' '.join(text.splitlines()))
             if post.transcripts and len(post.transcripts):
                 text += ' '.join([transcript.text for transcript in post.transcripts])
             if not text: continue
-            # print('[DetectSearchTerm] eldar ', len(eldar_query.filter([text])))
-            if len(eldar_query.filter([text])) == 0: continue
+            quary_matches = eldar_query.filter([text])
+            # print('[AddSearchRermsToPosts] eldar ', len(quary_matches))
+
+            if len(quary_matches) == 0: continue
             if search_term.id not in post.search_terms_ids: post.search_terms_ids.append(search_term.id)
     
     return posts
