@@ -85,8 +85,8 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
 
         count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
         collect_task_.status = CollectTaskStatus.finalized
+        print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
     except:
+        print(f'collect task failed ', collect_task)
         collect_task_.status = CollectTaskStatus.failed
     await collect_task_.save()
-
-    print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')

@@ -37,7 +37,7 @@ def get_query_with_declancions(keyword):
                 words_decls.append(word)
         full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
 
-    print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
+    # print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
     return Query(full_term, ignore_accent=False)
 
 
