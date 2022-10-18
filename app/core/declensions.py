@@ -212,7 +212,8 @@ def get_declensions_hy_naive(word):
 
 def get_declensions(words, lang):
     if not lang in ['ka', 'az', 'hy']:
-        raise Exception("lang % not supported"%lang) 
+        # raise Exception("lang % not supported"%lang) 
+        return words
     if type(words) != list:
         raise Exception("First position parameter must be list") 
 
