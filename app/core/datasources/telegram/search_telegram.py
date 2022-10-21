@@ -8,7 +8,7 @@ from app.core.datasources.datasource import Datasource
 from app.config.aop_config import slf, sleep_after
 from app.core.split import split_complex_query
 from eldar import Query
-from app.core.datasources.utils import add_search_terms_to_posts
+from app.core.datasources.utils import add_search_terms_to_posts, set_account_id
 
 @slf
 class TelegramCollector(Datasource):
@@ -203,6 +203,7 @@ class TelegramCollector(Datasource):
                             # monitor_id=api_post.id,
                             url=f'https://t.me/c/{api_post.peer_id.channel_id}/{api_post.from_id if api_post.from_id is not None else ""}'  if 'channel_id' in str(api_post) else None,
                     )
+            post = set_account_id(post, collect_task)
         except Exception as exc:
             print(exc)
         return post_doc

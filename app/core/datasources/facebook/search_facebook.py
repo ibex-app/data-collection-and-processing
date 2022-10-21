@@ -10,7 +10,7 @@ from typing import List, Dict
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id
 
 @slf
 class FacebookCollector:
@@ -44,13 +44,14 @@ class FacebookCollector:
             count=self.max_posts_per_call_,
             sortBy='overperforming' if collect_task.sample else 'date'
         )
-        
+        if not collect_task.get_hits_count:
+            params['platforms']='facebook'
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['searchTerm'] = collect_task.query
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
             params['accounts'] = ','.join([account.platform_id for account in collect_task.accounts])
         
-        # self.log.success(f'[Facebook] requests params has been generated: {params}.')
+        self.log.success(f'[Facebook] requests params has been generated: {params}.')
         return params
 
 
@@ -149,7 +150,8 @@ class FacebookCollector:
                     api_dump=api_post,
                 #  monitor_id=collect_task.monitor_id,
                     url=url)
-
+        post = set_account_id(post, collect_task)
+            
         return post
 
 

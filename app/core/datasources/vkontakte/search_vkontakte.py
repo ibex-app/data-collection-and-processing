@@ -6,7 +6,7 @@ from datetime import datetime
 from app.core.datasources.datasource import Datasource
 import vk_api
 from app.config.aop_config import slf, sleep_after
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id
 
 @slf
 class VKCollector(Datasource):
@@ -51,7 +51,8 @@ class VKCollector(Datasource):
             self.regenerate_token()
             params['access_token'] = self.token
             req = requests.get(url, params)
-        
+        self.log.info(req.json())
+        return []
         return req.json()['response']
 
 
@@ -204,6 +205,7 @@ class VKCollector(Datasource):
                         monitor_id=api_post['id'],
                         url=f'https://vk.com/wall{api_post["owner_id"]}_{api_post["id"]}',
                         )
+        post = set_account_id(post, collect_task)
         return post
 
 
@@ -240,7 +242,9 @@ class VKCollector(Datasource):
             q=query
         )
         
-        results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)['items']
+        results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)
+        return []
+        # results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)['items']
 
         # list of accounts with type of Account for every element
         accounts = self.map_to_accounts(results)
