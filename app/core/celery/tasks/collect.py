@@ -55,6 +55,7 @@ async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: C
         collect_task_.status = CollectTaskStatus.finalized
     except:
         collect_task_.status = CollectTaskStatus.failed
+        # collect_task_.hits_count = -2
 
     if not collect_task_: 
         raise KeyError(f'collect_task was not found for {collect_task.platform}, {collect_task.id}')
