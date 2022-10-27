@@ -191,7 +191,7 @@ def split_to_tasks(accounts: List[Account],
         sub_queries = split_queries(search_terms, collect_action, accounts)
 
     sub_accounts = split_accounts(accounts, collect_action, sample)
-    print(f'{len(sub_queries)} sub query(i/es) created')
+    print(f'{len(sub_queries)} sub quer(y/ies) created')
     print(f'{len(sub_accounts)} sub account(s) created')
 
 
@@ -213,10 +213,12 @@ def split_to_tasks(accounts: List[Account],
                 collect_tasks.append(collect_task)
     elif len(sub_accounts) > 0:
         for sub_accounts_chunk in sub_accounts:
-            collect_task: CollectTask = CollectTask(**collect_task_dict, accounts = sub_accounts_chunk)
+            collect_task: CollectTask = CollectTask(**collect_task_dict, 
+                                                    accounts = sub_accounts_chunk,
+                                                    account_ids = [_.id for _ in sub_accounts_chunk] )
             collect_tasks.append(collect_task)
     elif len(sub_queries) > 0:
-         for sub_query in sub_queries:
+        for sub_query in sub_queries:
             collect_task: CollectTask = CollectTask(**collect_task_dict, query = sub_query)
             collect_tasks.append(collect_task)
 

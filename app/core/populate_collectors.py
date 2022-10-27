@@ -85,8 +85,8 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
     if sample:
         finalized_hits_count_ids = await get_collected_hits_count_ids(monitor)
         finalized_samplings_ids = await get_sampled_ids(monitor)
-        print('finalized_hits_count_ids', finalized_hits_count_ids)
-        print('finalized_samplings_ids', finalized_samplings_ids)
+        # print('finalized_hits_count_ids', finalized_hits_count_ids)
+        # print('finalized_samplings_ids', finalized_samplings_ids)
     for collect_action in collect_actions:
         
         accounts: List[Account] = await get_accounts(collect_action)
@@ -198,8 +198,8 @@ async def get_sampled_ids(monitor:Monitor):
     sampled_ids = {}
     for platform in monitor.platforms:
         sampled_ids[platform] = {}
-        collect_tasks_for_accounts_ = chain.from_iterable([_.account_ids for _ in collect_tasks_for_accounts if _.platform == platform and _.account_ids])
-        sampled_ids[platform]['account_ids'] = list(set([_.id for _ in collect_tasks_for_accounts_]))
+        collect_tasks_for_account_ids = chain.from_iterable([_.account_ids for _ in collect_tasks_for_accounts if _.platform == platform and _.account_ids])
+        sampled_ids[platform]['account_ids'] = list(set(collect_tasks_for_account_ids))
 
         query = { 'monitor_ids': {'$in': [monitor.id]}, 'platform': platform, 'search_term_ids': { '$ne': None, '$exists': True} }
         search_term_ids = [_['search_term_ids'] for _ in posts_collection.find(query, { "search_term_ids": 1, "_id": 0})]

@@ -96,14 +96,16 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
 def set_account_id(post:Post, collect_task: CollectTask) -> Post:
     # log.info('[set_account_id] post', post)
     # log.info('[set_account_id] collect_task', collect_task)
-    if collect_task.accounts and len(collect_task.accounts):
-        account_match = [_.id for _ in collect_task.accounts if _.platform_id == post.author_platform_id]
-        # log.info('[set_account_id] account_match', account_match)
+    if not collect_task.accounts or len(collect_task.accounts) == 0:
+        return post
 
-        if len(account_match) == 0:
-            post.account_id = account_match[0]
-        else:
-            log.error(f'[set_account_id] no account found for {collect_task.platform} post: {post}')
+    account_match = [_.id for _ in collect_task.accounts if _.platform_id == post.author_platform_id]
+    # log.info('[set_account_id] account_match', account_match)
 
+    if len(account_match) == 0:
+        log.error(f'[set_account_id] no account found for {collect_task.platform} post: {post}')
+        return post
+
+    post.account_id = account_match[0]
     return post
             
