@@ -79,7 +79,7 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
         # print('[AddSearchRermsToPosts] query', eldar_query)
         
         for post in posts:
-            post.search_terms_ids = post.search_terms_ids or []
+            post.search_term_ids = post.search_term_ids or []
             text: str = f'{post.title} {post.text}'
             # print('[AddSearchRermsToPosts] text', ' '.join(text.splitlines()))
             if post.transcripts and len(post.transcripts):
@@ -89,7 +89,7 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
             # print('[AddSearchRermsToPosts] eldar ', len(quary_matches))
 
             if len(quary_matches) == 0: continue
-            if search_term.id not in post.search_terms_ids: post.search_terms_ids.append(search_term.id)
+            if search_term.id not in post.search_term_ids: post.search_term_ids.append(search_term.id)
     
     return posts
     

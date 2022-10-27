@@ -201,9 +201,9 @@ async def get_sampled_ids(monitor:Monitor):
         collect_tasks_for_accounts_ = chain.from_iterable([_.account_ids for _ in collect_tasks_for_accounts if _.platform == platform and _.account_ids])
         sampled_ids[platform]['account_ids'] = list(set([_.id for _ in collect_tasks_for_accounts_]))
 
-        query = { 'monitor_ids': {'$in': [monitor.id]}, 'platform': platform, 'search_terms_ids': { '$ne': None, '$exists': True} }
-        search_terms_ids = [_['search_terms_ids'] for _ in posts_collection.find(query, { "search_terms_ids": 1, "_id": 0})]
-        sampled_ids[platform]['search_term_ids'] =  [] if not search_terms_ids or not len(search_terms_ids) else list(set(chain.from_iterable(search_terms_ids)))
+        query = { 'monitor_ids': {'$in': [monitor.id]}, 'platform': platform, 'search_term_ids': { '$ne': None, '$exists': True} }
+        search_term_ids = [_['search_term_ids'] for _ in posts_collection.find(query, { "search_term_ids": 1, "_id": 0})]
+        sampled_ids[platform]['search_term_ids'] =  [] if not search_term_ids or not len(search_term_ids) else list(set(chain.from_iterable(search_term_ids)))
 
     return sampled_ids
 
