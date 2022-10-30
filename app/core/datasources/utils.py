@@ -108,4 +108,11 @@ def set_account_id(post:Post, collect_task: CollectTask) -> Post:
 
     post.account_id = account_match[0]
     return post
-            
+
+
+def set_total_engagement(post:Post) -> Post:
+    if not post.scores:
+        return post
+    post.scores.total = sum([_ for _ in post.scores.__dict__.values() if _ is not None])
+
+    return post

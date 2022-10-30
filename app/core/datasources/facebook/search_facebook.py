@@ -10,7 +10,7 @@ from typing import List, Dict
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id, set_total_engagement
 
 @slf
 class FacebookCollector:
@@ -151,7 +151,7 @@ class FacebookCollector:
                 #  monitor_id=collect_task.monitor_id,
                     url=url)
         post = set_account_id(post, collect_task)
-            
+        post = set_total_engagement(post)
         return post
 
 

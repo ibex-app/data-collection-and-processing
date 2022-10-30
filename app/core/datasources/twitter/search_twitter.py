@@ -11,7 +11,7 @@ from searchtweets import (
     gen_request_parameters,
     load_credentials
 )
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id, set_total_engagement
 import pandas as pd
 # import os
 from itertools import chain
@@ -269,6 +269,7 @@ class TwitterCollector:
                              api_dump=dict(**api_post))
         # print('[Twitter] setting  account_id')                                 
         post = set_account_id(post, collect_task)
+        post = set_total_engagement(post)
         return post
 
 

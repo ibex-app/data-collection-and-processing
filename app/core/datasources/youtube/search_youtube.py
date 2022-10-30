@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask, MediaStatus, monitor
 from app.config.aop_config import slf, sleep_after
 from app.core.datasources.youtube.helper import SimpleUTC
-from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id
+from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id, set_total_engagement
 
 
 @slf
@@ -173,6 +173,7 @@ class YoutubeCollector:
                             media_status =      MediaStatus.to_be_downloaded
                         )
         post = set_account_id(post, collect_task)
+        post = set_total_engagement(post)
         return post
 
 
