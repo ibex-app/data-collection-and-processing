@@ -256,10 +256,10 @@ class TwitterCollector:
         scores = Scores(likes=likes,
                         shares=shares,
                         engagement=engagement)
-        
+        # post_text = 
         # create post class
         post = Post(title=api_post['text'],
-                             text=api_post['source'],
+                             text=api_post['source'],#replace('Twitter Web App') SocialFlow Twitter for iPhone Twitter for Android
                              created_at=api_post['created_at'],
                              platform=Platform.twitter,
                              platform_id=api_post['platform_id'],

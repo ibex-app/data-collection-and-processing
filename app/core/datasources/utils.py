@@ -23,23 +23,41 @@ def get_query_with_declancions(keyword):
     if ' OR ' not in keyword and ' AND ' not in keyword and ' NOT ' not in keyword:
         try:
             search_terms_with_declancions = get_declensions([keyword], langid.classify(keyword)[0])
-            full_term = ' OR '.join(search_terms_with_declancions)
+            full_term =  '"' + '" OR "'.join(search_terms_with_declancions) + '"'
         except:
-            full_term = keyword
+            full_term = f'"{keyword}"'
     else:
         single_keywords, statements = split_complex_query(keyword)
         words_decls = []
         for word in single_keywords:
             try:
                 declensions = get_declensions([word], langid.classify(word)[0])
-                words_decls.append(' OR '.join(declensions))
+                full_term_dec =  '"' + '" OR "'.join(search_terms_with_declancions) + '"'
+                words_decls.append(' OR '.join(full_term_dec))
             except:
-                words_decls.append(word)
+                words_decls.append(f'"{word}"')
         full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
 
-    # print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
+    full_term = replace_spaces_with_and(full_term)
+    print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
     return Query(full_term, ignore_accent=False)
 
+def replace_spaces_with_and(query: str) -> str:
+    assabmle1 = []
+    assabmle2 = []
+    for i, part in enumerate(query.split('"')):
+        if i % 2 != 0:
+            assabmle1.append(part.replace(' ', '" AND "'))
+            assabmle2.append(part.replace(' ', ''))
+        else:
+            assabmle1.append(part)
+            assabmle2.append(part)
+    assabmled1 = '"'.join(assabmle1)    
+    assabmled2 = '"'.join(assabmle2)
+    if len(assabmle1) > 0:
+        return f'{assabmled1} OR {assabmled2}'
+    else:
+        return query
 
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
     if not collect_task.query: return posts
@@ -48,6 +66,8 @@ def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> Lis
         query = query.replace(') (', ') AND (').replace(') -(', ') NOT (')
     elif collect_task.platform == Platform.youtube:
         query = query.replace('" "', '" AND "').replace('"|"', '" OR "').replace('" -"', '" NOT "')
+
+    query = replace_spaces_with_and(query)
 
     log.info(f'[ValidatePostsByQuery] query {query}')
 
@@ -111,8 +131,15 @@ def set_account_id(post:Post, collect_task: CollectTask) -> Post:
 
 
 def set_total_engagement(post:Post) -> Post:
+    # print('[set_total_engagement]', post)
     if not post.scores:
+        # print('[set_total_engagement] no scores', post.scores)
+
         return post
+    total = sum([_ for _ in post.scores.__dict__.values() if _ is not None])
+    # print('[set_total_engagement] total', total)
+
     post.scores.total = sum([_ for _ in post.scores.__dict__.values() if _ is not None])
+    # print('[set_total_engagement] post.scores.total', post.scores.total)
 
     return post

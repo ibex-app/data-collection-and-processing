@@ -116,7 +116,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # Generating time intervals here,
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
-        time_intervals = get_time_intervals(collect_action, monitor, date_to, 3, sample)
+        time_intervals = get_time_intervals(collect_action, monitor, date_to, 1, sample)
         # [2021-01-01    -  2021-03-01]
 
         # [2021-01-07    -  2021-01-07,

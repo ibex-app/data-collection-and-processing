@@ -150,8 +150,11 @@ class FacebookCollector:
                     api_dump=api_post,
                 #  monitor_id=collect_task.monitor_id,
                     url=url)
+
         post = set_account_id(post, collect_task)
         post = set_total_engagement(post)
+        # if post.scores.total > 0:
+        #     print('[set_total_engagement] post.scores.total 111111', post.scores.total)
         return post
 
 
