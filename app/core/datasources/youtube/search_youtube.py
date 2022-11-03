@@ -202,8 +202,21 @@ class YoutubeCollector:
         req_url = "https://www.googleapis.com/youtube/v3/search"
 
         res = requests.get(req_url, params)
-        acc = res.json()['items']
-        accounts = self.map_to_accounts(acc)
+        ids = [_['id']['channelId'] for _ in res.json()['items']]
+        
+        if len(ids) == 0:
+            self.log.warn(f'[Youtube] no accounts for query: {query}')
+            return []
+        
+        params = dict(
+            part='snippet',
+            key=self.token,
+            id=ids
+        )
+        req_url = "https://www.googleapis.com/youtube/v3/channels"
+        res = requests.get(req_url, params)
+        
+        accounts = self.map_to_accounts(res.json()['items'])
         self.log.info(f'[Youtube] {len(accounts)} found')
         return accounts
 
@@ -219,17 +232,14 @@ class YoutubeCollector:
 
     def map_to_acc(self, acc: Account) -> Account:
         mapped_account = Account(
-            title=acc['snippet']['channelTitle'],
-            tags=[acc['etag']],
+            title=acc['snippet']['title'],
             img=acc['snippet']['thumbnails']['default']['url'],
-            url='',
+            url='https://youtube.com/' + acc['snippet']['customUrl'],
             platform=Platform.youtube,
-            platform_id=acc['id']['channelId'],
-            broadcasting_start_time=acc['snippet']['publishTime'],
+            platform_id=acc['id']
         )
         return mapped_account
-
-
+    
 # async def test():
 #     ibex_models.platform import Platform
 #     from app.config.mongo_config import init_mongo

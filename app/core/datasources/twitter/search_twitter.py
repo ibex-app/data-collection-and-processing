@@ -267,7 +267,7 @@ class TwitterCollector:
                              scores=scores,
                              url = f"https://twitter.com/{api_post['author_id']}/status/{api_post['platform_id']}",
                              api_dump=dict(**api_post))
-        # print('[Twitter] setting  account_id')                                 
+        # print('[Twitter] setting  account_id')                              
         post = set_account_id(post, collect_task)
         post = set_total_engagement(post)
         return post
@@ -334,7 +334,7 @@ class TwitterCollector:
     def map_to_acc(self, acc: any) -> Account:
         mapped_account = Account(
             title=acc['screen_name'],
-            url=acc['screen_name'],
+            url='https://twitter.com/'+acc['screen_name'],
             platform=Platform.twitter,
             platform_id=acc['id_str'],
             img=acc['profile_image_url_https']

@@ -52,7 +52,6 @@ class VKCollector(Datasource):
             params['access_token'] = self.token
             req = requests.get(url, params)
         self.log.info(req.json())
-        return []
         return req.json()['response']
 
 
@@ -237,16 +236,17 @@ class VKCollector(Datasource):
         # parameter for generated metadata
         params = dict(
             access_token=self.token,
-            limit=limit,
+            limit=limit*3,
             fields=[''],
             v=5.82,
-            q=query
+            q=query,
+            filters='publics,groups'
         )
         
-        results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)
-        return []
-        # results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)['items']
-
+        # results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)
+        # return []
+        results: List[any] = self.call_api("https://api.vk.com/method/search.getHints", params)['items']
+        results = [_ for _ in results if _['type'] != 'profile'][:limit]
         # list of accounts with type of Account for every element
         accounts = self.map_to_accounts(results)
         self.log.info(f'[VKontakte] {len(accounts)} found')
@@ -290,7 +290,7 @@ class VKCollector(Datasource):
             group_url = ''
         mapped_account = Account(
             title=group_name,
-            url='vk.com/' + group_url,
+            url='https://vk.com/' + group_url,
             platform=Platform.vkontakte,
             platform_id=group_id,
             img=group_photo
