@@ -127,7 +127,6 @@ class VKCollector(Datasource):
             params['fields'] = ['city', 'connections', 'counters', 'country', 'domain', 'exports', 'followers_count', 'has_photo', 'home_town', 'interests', 'is_no_index', 'first_name','last_name', 'deactivated', 'is_closed', 'military','nickname', 'personal', 'photo_50','relatives', 'schools','screen_name', 'sex', 'timezone', 'verified', 'wall_default', 'next_from']
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['q'] = collect_task.query
-            params['query'] = collect_task.query
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
             if len(collect_task.accounts) > 1: 
                 self.log.error(f'[{collect_task.platform}] Can not collect from multiple pages at the same time')
@@ -153,8 +152,11 @@ class VKCollector(Datasource):
         # list of posts returned by method
         results: List[any] = self.get_posts_by_params(params)
 
+        self.log.info(f'[VKonakte] posts collected unmapped - {len(results)}')
+
         # list of posts with type of Post for every element
         posts = self.map_to_posts(results, collect_task)
+        self.log.info(f'[VKonakte] posts collected - {len(posts)}')
 
         valid_posts = validate_posts_by_query(collect_task, posts)
         valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
@@ -177,34 +179,25 @@ class VKCollector(Datasource):
         """
         self.max_posts_per_call_ = 1
         params = self.generate_req_params(collect_task)  # parameters for generated metadata
-        # self.log.info(f'[VKonakte] request hits count - {params}')
-
-        # return self.get_posts(params)['total_count']
+        self.log.info(f'[VKonakte] request hits count - {params}')
         responce = self.get_posts(params)
+        if 'total_count' in responce:
+            self.log.info(f'[VKonakte] total_count hits count - {responce["total_count"]}')
+
+            return responce['total_count']
+
         offset_step_size = 1000 if responce['count'] > 5000 else math.ceil(responce['count']*.2)
-        self.log.info(f'[VKonakte] offset_step_size hits count {offset_step_size}')
-        # if not 'items' in responce:
-        #     self.log.info(f'[VKonakte]  hits count no items')
-        # self.log.info(f'[VKonakte]  hits count items len {len(responce["items"])}')
         
-        # if not 'date' in responce["items"][0]:
-        #     self.log.info(f'[VKonakte]  hits count no date if first item')
 
         date_ = datetime.utcfromtimestamp(responce['items'][0]['date'])
-        # self.log.info(f'[VKonakte] date_ hits count {date_}')
-
+        
         posting_rates = []
         for offset_step in range(1, 4):
             params['offset'] = offset_step_size * offset_step
-            # self.log.info(f'[VKonakte] offset_step hits count {offset_step} - {params}')
-
             responce = self.get_posts(params)
             posting_rates.append((date_ - datetime.utcfromtimestamp(responce['items'][0]['date'])).total_seconds())
             date_ = datetime.utcfromtimestamp(responce['items'][0]['date'])
-        
-        # self.log.info(f'[VKonakte] posting_rates hits count {posting_rates}')
-        
-        
+
         mean_posting_rate = statistics.mean(posting_rates)
         # self.log.info(f'[VKonakte] mean_posting_rate hits count {mean_posting_rate}')
         avg_count = ((collect_task.date_to - collect_task.date_from).total_seconds() * offset_step_size)/mean_posting_rate
@@ -226,8 +219,7 @@ class VKCollector(Datasource):
             likes= 0 if 'likes' not in api_post else api_post['likes']['count'],
             shares=0 if 'reposts' not in api_post else api_post['reposts']['count'],
             comments = 0 if 'comments' not in api_post else api_post['comments']['count'],
-            views = 0 if 'views' not in api_post else api_post['views']['count'],
-            shares = 0 if 'reposts' not in api_post else api_post['reposts']['count'],
+            views = 0 if 'views' not in api_post else api_post['views']['count']
         )
         post = Post(title=api_post['text'] if 'text' in api_post else "",
                         text="",

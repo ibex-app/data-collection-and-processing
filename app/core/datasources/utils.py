@@ -43,6 +43,7 @@ def get_query_with_declancions(keyword):
     return Query(full_term, ignore_accent=False)
 
 def replace_spaces_with_and(query: str) -> str:
+
     assabmle1 = []
     assabmle2 = []
     for i, part in enumerate(query.split('"')):
@@ -62,7 +63,9 @@ def replace_spaces_with_and(query: str) -> str:
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
     if not collect_task.query: return posts
     query = collect_task.query
-    if collect_task.platform == Platform.twitter:
+    if collect_task.platform == Platform.vkontakte:
+        query = f'"{query}"'
+    elif collect_task.platform == Platform.twitter:
         query = query.replace(') (', ') AND (').replace(') -(', ') NOT (')
     elif collect_task.platform == Platform.youtube:
         query = query.replace('" "', '" AND "').replace('"|"', '" OR "').replace('" -"', '" NOT "')

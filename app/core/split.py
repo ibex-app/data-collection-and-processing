@@ -113,19 +113,20 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
     # generate queries that are less then max lenght each 
     # TODO DRY this duplicated part
     if collect_action.platform not in [Platform.facebook, Platform.twitter, Platform.youtube]:
-        for single_term in terms:
-            if len(terms) == 1: return [terms[0]]
+        # for single_term in terms:
+        #     if len(terms) == 1: return [terms[0]]
             
-            full_query_ = f'{ full_query }{operators["or_"]}({single_term})'
-            if len(full_query_) > query_length_for_platform and full_query:
-                full_query_striped = full_query.lstrip(f'{operators["or_"]}')
-                all_queries.append(full_query_striped)
-                full_query = f'({single_term})'
-            else:
-                full_query = full_query_
-        all_queries = strip_and_append(all_queries, full_query, operators["or_"])
+        #     full_query_ = f'{ full_query }{operators["or_"]}({single_term})'
+        #     if len(full_query_) > query_length_for_platform and full_query:
+        #         full_query_striped = full_query.lstrip(f'{operators["or_"]}')
+        #         all_queries.append(full_query_striped)
+        #         full_query = f'({single_term})'
+        #     else:
+        #         full_query = full_query_
+        # all_queries = strip_and_append(all_queries, full_query, operators["or_"])
         
-        return all_queries
+        # return all_queries
+        return terms
 
     operators = boolean_operators[collect_action.platform]
     # print(f'terms --- {len(terms)}' )
