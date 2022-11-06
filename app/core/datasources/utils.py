@@ -130,6 +130,7 @@ def set_account_id(post:Post, collect_task: CollectTask) -> Post:
         return post
 
     post.account_id = account_match[0]
+    # log.info('[set_account_id] post account_id', post.account_id)
     return post
 
 
