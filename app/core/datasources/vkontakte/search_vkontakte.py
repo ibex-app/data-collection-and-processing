@@ -1,5 +1,7 @@
 import os
 import requests
+import math
+import statistics
 from typing import List, Dict
 from ibex_models import Post, Scores, CollectTask, Platform, Account
 from datetime import datetime
@@ -43,15 +45,14 @@ class VKCollector(Datasource):
     def call_api_sleep(self, url, params):
         return self.call_api(url, params)
 
-
+    
     def call_api(self, url, params):
         req = requests.get(url, params)
-        
         if 'response' not in req.json():
             self.regenerate_token()
             params['access_token'] = self.token
             req = requests.get(url, params)
-        self.log.info(req.json())
+        # self.log.info(f'[VKonakte] responce - {req.json()}')
         return req.json()['response']
 
 
@@ -118,19 +119,19 @@ class VKCollector(Datasource):
         params = dict(
             access_token=self.token,
             count=self.max_posts_per_call_,
-            fields=['city', 'connections', 'counters', 'country', 'domain', 'exports', 'followers_count', 'has_photo', 'home_town', 'interests', 'is_no_index', 'first_name','last_name', 'deactivated', 'is_closed', 'military','nickname', 'personal', 'photo_50','relatives', 'schools','screen_name', 'sex', 'timezone', 'verified', 'wall_default', 'next_from'],
             start_time=int(collect_task.date_from.strftime('%s')),
             end_time=int(collect_task.date_to.strftime('%s')),
             v=5.81,
         )
-
+        if not collect_task.get_hits_count:
+            params['fields'] = ['city', 'connections', 'counters', 'country', 'domain', 'exports', 'followers_count', 'has_photo', 'home_town', 'interests', 'is_no_index', 'first_name','last_name', 'deactivated', 'is_closed', 'military','nickname', 'personal', 'photo_50','relatives', 'schools','screen_name', 'sex', 'timezone', 'verified', 'wall_default', 'next_from']
         if collect_task.query is not None and len(collect_task.query) > 0:
             params['q'] = collect_task.query
             params['query'] = collect_task.query
         if collect_task.accounts is not None and len(collect_task.accounts) > 0:
             if len(collect_task.accounts) > 1: 
                 self.log.error(f'[{collect_task.platform}] Can not collect from multiple pages at the same time')
-            params['owner_id'] = collect_task.accounts[0].platform_id
+            params['owner_id'] = int(collect_task.accounts[0].platform_id)
         return params
 
 
@@ -148,7 +149,7 @@ class VKCollector(Datasource):
         
         # parameter for generated metadata
         params = self.generate_req_params(collect_task)
-
+        self.log.info(f'[VKonakte] request posts - {params}')
         # list of posts returned by method
         results: List[any] = self.get_posts_by_params(params)
 
@@ -176,8 +177,40 @@ class VKCollector(Datasource):
         """
         self.max_posts_per_call_ = 1
         params = self.generate_req_params(collect_task)  # parameters for generated metadata
-        return self.get_posts(params)['total_count']
+        # self.log.info(f'[VKonakte] request hits count - {params}')
 
+        # return self.get_posts(params)['total_count']
+        responce = self.get_posts(params)
+        offset_step_size = 1000 if responce['count'] > 5000 else math.ceil(responce['count']*.2)
+        self.log.info(f'[VKonakte] offset_step_size hits count {offset_step_size}')
+        # if not 'items' in responce:
+        #     self.log.info(f'[VKonakte]  hits count no items')
+        # self.log.info(f'[VKonakte]  hits count items len {len(responce["items"])}')
+        
+        # if not 'date' in responce["items"][0]:
+        #     self.log.info(f'[VKonakte]  hits count no date if first item')
+
+        date_ = datetime.utcfromtimestamp(responce['items'][0]['date'])
+        # self.log.info(f'[VKonakte] date_ hits count {date_}')
+
+        posting_rates = []
+        for offset_step in range(1, 4):
+            params['offset'] = offset_step_size * offset_step
+            # self.log.info(f'[VKonakte] offset_step hits count {offset_step} - {params}')
+
+            responce = self.get_posts(params)
+            posting_rates.append((date_ - datetime.utcfromtimestamp(responce['items'][0]['date'])).total_seconds())
+            date_ = datetime.utcfromtimestamp(responce['items'][0]['date'])
+        
+        # self.log.info(f'[VKonakte] posting_rates hits count {posting_rates}')
+        
+        
+        mean_posting_rate = statistics.mean(posting_rates)
+        # self.log.info(f'[VKonakte] mean_posting_rate hits count {mean_posting_rate}')
+        avg_count = ((collect_task.date_to - collect_task.date_from).total_seconds() * offset_step_size)/mean_posting_rate
+        # self.log.info(f'[VKonakte] avg_count hits count {avg_count}')
+        return math.ceil(avg_count)
+        
 
     def map_to_post(self, api_post: Dict, collect_task: CollectTask) -> Post:
         """The method is responsible for mapping data redudned by plarform api
@@ -188,13 +221,16 @@ class VKCollector(Datasource):
         Returns:
             (Post): class derived from API data.
         """
-        # 
+        
         scores = Scores(
-            likes= 0 if not 'likes' in api_post else api_post['likes']['count'],
-            shares=0 if not 'reposts' in api_post else api_post['reposts']['count'],
+            likes= 0 if 'likes' not in api_post else api_post['likes']['count'],
+            shares=0 if 'reposts' not in api_post else api_post['reposts']['count'],
+            comments = 0 if 'comments' not in api_post else api_post['comments']['count'],
+            views = 0 if 'views' not in api_post else api_post['views']['count'],
+            shares = 0 if 'reposts' not in api_post else api_post['reposts']['count'],
         )
-        post = Post(title=api_post['title'] if 'title' in api_post else "",
-                        text=api_post['text'] if 'text' in api_post else "",
+        post = Post(title=api_post['text'] if 'text' in api_post else "",
+                        text="",
                         created_at=api_post['date'] if 'date' in api_post else datetime.now(),
                         platform=Platform.vkontakte,
                         platform_id=api_post['id'],
@@ -278,12 +314,13 @@ class VKCollector(Datasource):
         group_name = ''
         group_photo = ''
         group_url = ''
-        if 'group' in str(api_acc):
-            group_id = api_acc['group']['id']
+        if  api_acc['type'] == 'group':
+            group_id = 0-api_acc['group']['id']
+            # group_id = api_acc['group']['screen_name']
             group_photo = api_acc['group']['photo_100']
             group_name = api_acc['group']['name']
             group_url = api_acc['group']['screen_name']
-        if 'profile' in str(api_acc):
+        if api_acc['type'] == 'profile':
             group_id = api_acc['profile']['id']
             group_photo = api_acc['profile']['first_name']
             group_name = ''

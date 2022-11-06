@@ -98,14 +98,19 @@ class FacebookCollector:
 
         return results
 
-    
+    @sleep_after(tag='Facebook')
     async def get_hits_count(self, collect_task: CollectTask) -> int:
         params  = self.generate_request_params(collect_task)
         params['count'] = 0
         self.log.info('[Facebook] Hits count params', params)
         responce = requests.get("https://api.crowdtangle.com/posts/search", params=params).json()
         self.log.info('[Facebook] Hits count responce', responce)
-        hits_count = responce["result"]["hitCount"]
+        if responce["status"] != 200:
+            hits_count = -2
+        elif 'hitCount' not in responce["result"]:
+            hits_count = 0
+        else:
+            hits_count = responce["result"]["hitCount"]
         self.log.info(f'[Facebook] Hits count - {hits_count}')
 
         return hits_count

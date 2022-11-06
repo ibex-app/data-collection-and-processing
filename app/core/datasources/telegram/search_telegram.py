@@ -262,9 +262,8 @@ class TelegramCollector(Datasource):
     def map_to_account(self, acc: Account) -> Account:
         mapped_account = Account(
             title=acc.title,
-            url='t.me/'+acc.username,
+            url='https://t.me/'+acc.username,
             platform=Platform.telegram,
             platform_id=acc.id,
-            broadcasting_start_time=acc.date
         )
         return mapped_account

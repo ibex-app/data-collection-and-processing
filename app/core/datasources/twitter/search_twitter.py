@@ -13,7 +13,7 @@ from searchtweets import (
 )
 from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id, set_total_engagement
 import pandas as pd
-# import os
+import re
 from itertools import chain
 import json
 from requests_oauthlib import OAuth1
@@ -258,8 +258,9 @@ class TwitterCollector:
                         engagement=engagement)
         # post_text = 
         # create post class
+        # title = re.sub('Twitter Web App|SocialFlow|Twitter for iPhone|Twitter for Android|Twitter for iPad', '', api_post['text'])
         post = Post(title=api_post['text'],
-                             text=api_post['source'],#replace('Twitter Web App') SocialFlow Twitter for iPhone Twitter for Android
+                             text='', #api_post['source'],
                              created_at=api_post['created_at'],
                              platform=Platform.twitter,
                              platform_id=api_post['platform_id'],

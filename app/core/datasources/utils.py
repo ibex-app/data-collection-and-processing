@@ -39,7 +39,7 @@ def get_query_with_declancions(keyword):
         full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
 
     full_term = replace_spaces_with_and(full_term)
-    print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
+    # print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
     return Query(full_term, ignore_accent=False)
 
 def replace_spaces_with_and(query: str) -> str:
