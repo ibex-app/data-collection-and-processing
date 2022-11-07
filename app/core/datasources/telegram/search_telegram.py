@@ -40,10 +40,13 @@ class TelegramCollector(Datasource):
         )
 
 
-    async def get_first_and_last_message(self, channel, collect_task):
-        first_msg = await self.client.get_messages(channel, offset_date=collect_task.date_from, limit=1)
-        # first_msg = await self.client.get_messages(channel, min_id=pre_first_msg[0].id, limit=1)
-        last_msg = await self.client.get_messages(channel, offset_date=collect_task.date_to, limit=1)
+    async def get_first_and_last_message(self, channel, collect_task, query:str = None):
+        if query:
+            first_msg = await self.client.get_messages(channel, offset_date=collect_task.date_from, limit=1, search=query)
+            last_msg = await self.client.get_messages(channel, offset_date=collect_task.date_to, limit=1, search=query)
+        else:
+            first_msg = await self.client.get_messages(channel, offset_date=collect_task.date_from, limit=1)
+            last_msg = await self.client.get_messages(channel, offset_date=collect_task.date_to, limit=1)
 
         return first_msg[0].id, last_msg[0].id
 
@@ -63,6 +66,7 @@ class TelegramCollector(Datasource):
         
         await self.client.connect()
 
+
     async def get_keyword_with_least_posts(self, collect_task: CollectTask) -> str:
         # split_complex_query splits query into words and statements
         # keyword_1,           keyword_2,          keyword_3,      keyword_4
@@ -73,8 +77,9 @@ class TelegramCollector(Datasource):
         keywords_with_hits_counts = []
         for i, keyword in enumerate(keywords):
             if statements[i - 1] == '_NOT': continue
-            collect_task.query = keyword
-            hits_count = await self.get_hits_count(collect_task)
+            collect_task_ = collect_task.copy()
+            collect_task_.query = keyword
+            hits_count = await self.get_hits_count(collect_task_, True)
             keywords_with_hits_counts.append((keyword, hits_count))
 
         keywords_with_hits_counts.sort(key=lambda tup: tup[1])
@@ -82,6 +87,42 @@ class TelegramCollector(Datasource):
         keyword_with_least_posts = keywords_with_hits_counts[0]
         collect_task.query = tmp_query
         return keyword_with_least_posts[0]
+
+
+    async def get_query(self, collect_task):
+        if collect_task.query and (' AND ' in collect_task.query or ' OR ' in collect_task.query):
+            query = await self.get_keyword_with_least_posts(collect_task)
+        else:
+            query = collect_task.query
+        return query
+
+
+    async def generate_search_params(self, collect_task: CollectTask):
+        channel = await self.get_channel(collect_task)
+        # Variables for searching through date range.
+        query = None
+        if collect_task.query:
+            query = await self.get_query(collect_task)
+
+        first_msg_id, last_msg_id = await self.get_first_and_last_message(channel, collect_task, query)
+        
+        params = dict(min_id=first_msg_id,
+                    max_id=last_msg_id,
+                    limit=1 if collect_task.get_hits_count else self.max_posts_per_call_)
+
+        if collect_task.query:
+            params["search"] = query
+        
+        self.log.info('[Telegram] params ', params)
+        return channel, params
+
+
+    async def get_channel(self, collect_task: CollectTask):
+        channel = None
+        if collect_task.accounts and collect_task.accounts[0]:
+            channel = await self.client.get_entity(int(collect_task.accounts[0].platform_id))
+        return channel
+
 
     async def collect(self, collect_task: CollectTask) -> List[Post]:
         """The method is responsible for collecting posts
@@ -94,35 +135,23 @@ class TelegramCollector(Datasource):
         """
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
-
-        await self.connect()
-
-        channel = ''
-        if collect_task.accounts and collect_task.accounts[0]:
-            channel = await self.client.get_entity(int(collect_task.accounts[0].platform_id))
-
+        
         # Boolean variable for looping through pages.
         next_from = True
         
-        # Variables for searching through date range.
-        first_msg_id, last_msg_id = await self.get_first_and_last_message(channel, collect_task)
-        
-        init_query = collect_task.query
-        if collect_task.query and (' AND ' in collect_task.query or ' OR ' in collect_task.query):
-            init_query = await self.get_keyword_with_least_posts(collect_task)
-        
+        await self.connect()
+
         requests_count = 0
         posts = []
+
+        channel, params = await self.generate_search_params(collect_task)
+
         while next_from:
-            messages = await self.client.get_messages(channel,
-                                                 search=init_query,
-                                                 min_id=first_msg_id,
-                                                 max_id=last_msg_id,
-                                                 add_offset=requests_count * self.max_posts_per_call_,
-                                                 limit=self.max_posts_per_call_
-                                                )
+            params['add_offset'] = requests_count * self.max_posts_per_call_
+            messages = await self.client.get_messages(channel, **params)
+
             self.log.info('offset', requests_count * self.max_posts_per_call_)
-            # eldar = Query(collect_task.query)
+
             messages = [_ for _ in messages if _.message]
             posts += messages
                 
@@ -140,20 +169,20 @@ class TelegramCollector(Datasource):
             if requests_count >= self.max_requests_:
                 self.log.info(f'[Telegram] limit of {self.max_requests_} have been reached')
                 break
-        
+        await self.client.disconnect()
+
         maped_posts = self.map_to_posts(posts, collect_task)
         
         self.log.info(f'[Telegram] {len(maped_posts)} posts collected ')
         
-        valid_posts = validate_posts_by_query(collect_task, posts)
+        valid_posts = validate_posts_by_query(collect_task, maped_posts)
         valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
         self.log.success(f'[Telegram] {len(valid_posts)} valid posts collected')
 
-        await self.client.disconnect()
         return maped_posts
 
 
-    async def get_hits_count(self, collect_task: CollectTask) -> int:
+    async def get_hits_count(self, collect_task: CollectTask, connected = False) -> int:
         """The method is responsible for collecting the number of posts,
             that satisfy all criterias in CollectTask object.
         Note:
@@ -167,17 +196,21 @@ class TelegramCollector(Datasource):
         """
         if collect_task.query and (' AND ' in collect_task.query or ' OR ' in collect_task.query):
             return -1
-            
-        await self.connect()
+        if not connected:
+            await self.connect()
+
+        channel, params = await self.generate_search_params(collect_task)
         
-        channel = ''
-        if collect_task.accounts and collect_task.accounts[0]:
-            channel = await self.client.get_entity(int(collect_task.accounts[0].platform_id))
+        if collect_task.query:
+            messages = await self.client.get_messages(channel, **params)
+            hits_count = messages.total
+        else:
+            hits_count = params['max_id'] - params['min_id']
+        if not connected:
+            await self.client.disconnect()
 
-        first_msg_id, last_msg_id = await self.get_first_and_last_message(channel, collect_task)
-
-        await self.client.disconnect()
-        return last_msg_id - first_msg_id
+        self.log.info('[Telegram] hits count - ', hits_count)
+        return hits_count
 
 
     def map_to_post(self, api_post: Dict, collect_task: CollectTask) -> Post:
@@ -254,7 +287,6 @@ class TelegramCollector(Datasource):
             except ValueError as e:
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
-
 
     async def get_accounts(self, query: str, limit: int = 5) -> List[Account]:
         self.log.info(f'[Telegram] searching for accounts with query: {query}')

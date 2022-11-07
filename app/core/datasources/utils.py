@@ -31,7 +31,7 @@ def get_query_with_declancions(keyword):
         words_decls = []
         for word in single_keywords:
             try:
-                declensions = get_declensions([word], langid.classify(word)[0])
+                search_terms_with_declancions = get_declensions([word], langid.classify(word)[0])
                 full_term_dec =  '"' + '" OR "'.join(search_terms_with_declancions) + '"'
                 words_decls.append(' OR '.join(full_term_dec))
             except:
@@ -39,7 +39,7 @@ def get_query_with_declancions(keyword):
         full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
 
     full_term = replace_spaces_with_and(full_term)
-    # print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
+    print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
     return Query(full_term, ignore_accent=False)
 
 def replace_spaces_with_and(query: str) -> str:
@@ -60,9 +60,10 @@ def replace_spaces_with_and(query: str) -> str:
     else:
         return query
 
+
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
     if not collect_task.query: return posts
-    query = collect_task.query
+    query = collect_task.query.replace('#', '').replace('@', '')
     if collect_task.platform == Platform.vkontakte:
         query = f'"{query}"'
     elif collect_task.platform == Platform.twitter:
@@ -77,7 +78,7 @@ def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> Lis
     eldar = Query(query, ignore_case=True, ignore_accent=False)
     posts_ = []
     for post in posts:
-        text: str = f'{post.title} {post.text}'
+        text: str = str(post.api_dump)
         # log.info(f'[ValidatePostsByQuery] text {text}')
         if not text: continue
         query_search_result = eldar.filter([text])
@@ -98,19 +99,21 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
 
     # TODO use subprocesses here
     for search_term in search_terms:
-        eldar_query = get_query_with_declancions(search_term.term)
+        term = search_term.term.replace('#', '').replace('@', '')
+
+        eldar_query = get_query_with_declancions(term)
         # print('[AddSearchRermsToPosts] query', eldar_query)
         
         for post in posts:
             post.search_term_ids = post.search_term_ids or []
-            text: str = f'{post.title} {post.text}'
-            # print('[AddSearchRermsToPosts] text', ' '.join(text.splitlines()))
+            text: str = str(post.api_dump)
+            print('[AddSearchRermsToPosts] text', ' '.join(text.splitlines()))
             if post.transcripts and len(post.transcripts):
                 text += ' '.join([transcript.text for transcript in post.transcripts])
             if not text: continue
             quary_matches = eldar_query.filter([text])
-            # print('[AddSearchRermsToPosts] eldar ', len(quary_matches))
 
+            print('[AddSearchRermsToPosts] match count ', len(quary_matches))
             if len(quary_matches) == 0: continue
             if search_term.id not in post.search_term_ids: post.search_term_ids.append(search_term.id)
     

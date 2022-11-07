@@ -146,7 +146,7 @@ class TwitterCollector:
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
         params = gen_request_parameters(
-            query = self.build_the_query(collect_task),
+            query = self.build_the_query(collect_task) + ' -is:retweet',
             granularity='hour',
             start_time=collect_task.date_from.strftime("%Y-%m-%d %H:%M"),
             end_time=collect_task.date_to.strftime("%Y-%m-%d %H:%M")
