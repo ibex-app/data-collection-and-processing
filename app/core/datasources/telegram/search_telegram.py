@@ -48,7 +48,7 @@ class TelegramCollector(Datasource):
             first_msg = await self.client.get_messages(channel, offset_date=collect_task.date_from, limit=1)
             last_msg = await self.client.get_messages(channel, offset_date=collect_task.date_to, limit=1)
 
-        return first_msg[0].id, last_msg[0].id
+        return None if len(first_msg) == 0 else first_msg[0].id, None if len(last_msg) == 0 else last_msg[0].id
 
 
     async def connect(self):
@@ -106,10 +106,12 @@ class TelegramCollector(Datasource):
 
         first_msg_id, last_msg_id = await self.get_first_and_last_message(channel, collect_task, query)
         
-        params = dict(min_id=first_msg_id,
-                    max_id=last_msg_id,
-                    limit=1 if collect_task.get_hits_count else self.max_posts_per_call_)
-
+        params = dict( limit=1 if collect_task.get_hits_count else self.max_posts_per_call_)
+        if first_msg_id:
+            params['min_id'] = first_msg_id
+        if last_msg_id:
+            params['max_id'] = last_msg_id
+        
         if collect_task.query:
             params["search"] = query
         
@@ -179,7 +181,7 @@ class TelegramCollector(Datasource):
         valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
         self.log.success(f'[Telegram] {len(valid_posts)} valid posts collected')
 
-        return maped_posts
+        return valid_posts
 
 
     async def get_hits_count(self, collect_task: CollectTask, connected = False) -> int:
@@ -203,7 +205,7 @@ class TelegramCollector(Datasource):
         
         if collect_task.query:
             messages = await self.client.get_messages(channel, **params)
-            hits_count = messages.total
+            hits_count = messages.total or 0
         else:
             hits_count = params['max_id'] - params['min_id']
         if not connected:

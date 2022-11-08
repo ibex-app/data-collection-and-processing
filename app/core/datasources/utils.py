@@ -39,7 +39,7 @@ def get_query_with_declancions(keyword):
         full_term = ''.join([f'{statement}({new_word})' for new_word, statement in zip(words_decls, [''] + statements)])
 
     full_term = replace_spaces_with_and(full_term)
-    print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
+    # print(f'[get_query_with_declancions] full_term for {keyword} : {full_term} ')
     return Query(full_term, ignore_accent=False)
 
 def replace_spaces_with_and(query: str) -> str:
@@ -55,25 +55,31 @@ def replace_spaces_with_and(query: str) -> str:
             assabmle2.append(part)
     assabmled1 = '"'.join(assabmle1)    
     assabmled2 = '"'.join(assabmle2)
+    
     if len(assabmle1) > 0:
-        return f'{assabmled1} OR {assabmled2}'
+        query_ = f'{assabmled1} OR {assabmled2}'
     else:
-        return query
+        query_ = query
+
+    # log.info(f'[ValidatePostsByQuery] query {query}')
+    return query_
 
 
 def validate_posts_by_query(collect_task: CollectTask, posts: List[Post]) -> List[Post]:
     if not collect_task.query: return posts
     query = collect_task.query.replace('#', '').replace('@', '')
-    if collect_task.platform == Platform.vkontakte:
+    if collect_task.platform in [Platform.vkontakte, Platform.telegram]:
         query = f'"{query}"'
     elif collect_task.platform == Platform.twitter:
         query = query.replace(') (', ') AND (').replace(') -(', ') NOT (')
     elif collect_task.platform == Platform.youtube:
         query = query.replace('" "', '" AND "').replace('"|"', '" OR "').replace('" -"', '" NOT "')
 
+    # log.info(f'[ValidatePostsByQuery] query {query}')
+
     query = replace_spaces_with_and(query)
 
-    log.info(f'[ValidatePostsByQuery] query {query}')
+    # log.info(f'[ValidatePostsByQuery] replace_spaces_with_and {query}')
 
     eldar = Query(query, ignore_case=True, ignore_accent=False)
     posts_ = []
@@ -95,7 +101,7 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
     else:
         search_terms = await SearchTerm.find().to_list()
 
-    log.info(f'[AddSearchRermsToPosts] {len(search_terms)} total search terms in monitor')
+    # log.info(f'[AddSearchRermsToPosts] {len(search_terms)} total search terms in monitor')
 
     # TODO use subprocesses here
     for search_term in search_terms:
@@ -107,13 +113,13 @@ async def add_search_terms_to_posts(posts:List[Post], monitor_id: UUID = None) -
         for post in posts:
             post.search_term_ids = post.search_term_ids or []
             text: str = str(post.api_dump)
-            print('[AddSearchRermsToPosts] text', ' '.join(text.splitlines()))
+            # print('[AddSearchRermsToPosts] text', ' '.join(text.splitlines()))
             if post.transcripts and len(post.transcripts):
                 text += ' '.join([transcript.text for transcript in post.transcripts])
             if not text: continue
             quary_matches = eldar_query.filter([text])
 
-            print('[AddSearchRermsToPosts] match count ', len(quary_matches))
+            # print('[AddSearchRermsToPosts] match count ', len(quary_matches))
             if len(quary_matches) == 0: continue
             if search_term.id not in post.search_term_ids: post.search_term_ids.append(search_term.id)
     
