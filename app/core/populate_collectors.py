@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import List
+import pytz
 
 from beanie.odm.operators.find.comparison import In
 from beanie.odm.operators.find.element import Exists
@@ -15,6 +16,9 @@ from app.config.mongo_config import DBConstants
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
 from uuid import UUID
+
+utc=pytz.UTC
+
 
 async def get_collector_tasks(monitor_id:UUID, sample: bool = False) -> List[chain or group]:
     if sample:
@@ -97,6 +101,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
 
         # Generateing hits count task here
         date_to: datetime = monitor.date_to or datetime.now() - timedelta(hours=5)
+        date_to = utc.localize(date_to)
         if sample:
             accounts_for_hits_count, search_terms_for_hits_count = remove_collected_samples(collect_action, accounts, search_terms, finalized_hits_count_ids)
             # Generating hits count task for each search term

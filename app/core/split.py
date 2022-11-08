@@ -225,11 +225,14 @@ def split_to_tasks(accounts: List[Account],
 
     return collect_tasks
 
+import pytz
+
+utc=pytz.UTC
 
 
 def get_time_intervals(collect_action: CollectAction, monitor: Monitor, date_to: datetime, number_of_intervals:int = 5, sample: bool = False) -> List[Tuple[datetime, datetime]]:
     date_from = monitor.date_from if collect_action.last_collection_date is None else collect_action.last_collection_date 
-
+    date_from = utc.localize(date_from)
     intervals = []
     if sample:
         for i in range(number_of_intervals):

@@ -1,5 +1,4 @@
 import os
-import time
 from datetime import datetime
 from telethon.sync import TelegramClient
 from telethon import functions, types
@@ -44,6 +43,8 @@ class TelegramCollector(Datasource):
 
 
     async def get_first_and_last_message(self, channel, collect_task, query:str = None):
+        if not collect_task.accounts or not collect_task.accounts[0]:
+            return 0, 2147483647
         if query:
             first_msg = await self.client.get_messages(channel, offset_date=collect_task.date_from, limit=1, search=query)
             last_msg = await self.client.get_messages(channel, offset_date=collect_task.date_to, limit=1, search=query)
@@ -97,60 +98,49 @@ class TelegramCollector(Datasource):
             query = await self.get_keyword_with_least_posts(collect_task)
         else:
             query = collect_task.query
-        return query or ''
+        return query
+        
+
+    async def get_channel(self, collect_task: CollectTask):
+        channel = InputPeerEmpty()
+        if collect_task.accounts and collect_task.accounts[0]:
+            channel = await self.client.get_entity(int(collect_task.accounts[0].platform_id))
+        return InputPeerChannel(channel_id=1727508066, access_hash=channel.access_hash), channel.access_hash
 
 
     async def generate_search_params(self, collect_task: CollectTask):
-        peer, channel = await self.get_channel(collect_task)
-        query = await self.get_query(collect_task)
-        if collect_task.accounts and len(collect_task.accounts):
-            first_msg_id, last_msg_id = await self.get_first_and_last_message(channel, collect_task, query)
-            params = dict(
-                peer=peer,
-                filter=InputMessagesFilterEmpty(),
-                q=query,
-                min_date=collect_task.date_from,
-                max_date=collect_task.date_to,
-                max_id=last_msg_id,
-                limit=1 if collect_task.get_hits_count else self.max_posts_per_call_,
-                from_id=InputPeerEmpty(),
-                offset_id=0,
-                min_id=first_msg_id,
-                hash=channel.access_hash
-            )
-        else:
-            params = dict(
-                q=query,
-                filter=InputMessagesFilterEmpty(),
-                min_date=collect_task.date_from,
-                max_date=collect_task.date_to,
-                offset_peer=InputPeerEmpty(),
-                offset_rate=0,
-                offset_id=0,
-                limit=1 if collect_task.get_hits_count else self.max_posts_per_call_,
-                folder_id=None
-            )
+        channel, peer = await self.get_channel(collect_task)
+        query = ''
+        if collect_task.query:
+            query = await self.get_query(collect_task)
+
+        first_msg_id, last_msg_id = await self.get_first_and_last_message(channel, collect_task, query)
+        params = dict(
+            peer=channel,
+            filter=InputMessagesFilterEmpty(),
+            q=query,
+            min_date=collect_task.date_from,
+            max_date=collect_task.date_to,
+            max_id=last_msg_id,
+            limit=1 if collect_task.get_hits_count else self.max_posts_per_call_,
+            from_id=InputPeerEmpty(),
+            offset_id=0,
+            min_id=first_msg_id,
+            hash=channel.access_hash
+        )
+        q=query,
+        filter=InputMessagesFilterEmpty(),
+        min_date=collect_task.date_from,
+        max_date=collect_task.date_to,
+        offset_peer=channel or InputPeerEmpty(),
+        offset_rate=0,
+        offset_id=0,
+        limit=1 if collect_task.get_hits_count else self.max_posts_per_call_,
+        folder_id=None
         
         self.log.info('[Telegram] params ', params)
         return params
 
-
-    async def get_channel(self, collect_task: CollectTask):
-        if collect_task.accounts and collect_task.accounts[0]:
-            channel = await self.client.get_entity(int(collect_task.accounts[0].platform_id))
-            return InputPeerChannel(channel_id=int(collect_task.accounts[0].platform_id), access_hash=channel.access_hash), channel
-        else:
-            return InputPeerEmpty(), None
-
-    def get_search_method(self,  collect_task: CollectTask):
-        if collect_task.accounts and collect_task.accounts[0]:
-            return SearchRequest
-        else:
-            return SearchGlobalRequest
-
-    @sleep_after(tag='Telegram', pause_time=1, rang=1)
-    async def api_call(self, search_method, params):
-        return await self.client(search_method(**params))
 
     async def collect(self, collect_task: CollectTask) -> List[Post]:
         """The method is responsible for collecting posts
@@ -164,28 +154,23 @@ class TelegramCollector(Datasource):
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
         
-        # Boolean variable for looping through pages.
-        
         await self.connect()
 
         requests_count = 0
         posts = []
 
         params = await self.generate_search_params(collect_task)
-        search_method = self.get_search_method(collect_task)
+        # Boolean variable for looping through pages.
         next_rate = 0
         while True:
-            if collect_task.accounts and len(collect_task.accounts):
-                params['add_offset'] = requests_count * self.max_posts_per_call_
-                self.log.info('offset', params['add_offset'])
-            else:
-                params['offset_rate'] = next_rate
+            params['add_offset'] = requests_count * self.max_posts_per_call_
+            self.log.info('offset', params['add_offset'])
 
-            api_result = await self.client(search_method(**params))
+            api_result = await self.client(SearchRequest(**params))
             posts += api_result.messages
                 
             requests_count += 1
-            self.log.info(f'[Telegram] request # {requests_count} messages {len(api_result.messages)}')
+            self.log.info(f'[Telegram] request # {requests_count} messages {len(api_result)}')
 
             if not len(posts):
                 self.log.info(f'[Telegram] No posts found')
@@ -195,24 +180,21 @@ class TelegramCollector(Datasource):
                 self.log.info(f'[Telegram] limit of {self.max_requests_} have been reached')
                 break
 
-            if not len(api_result.messages) or api_result.messages[-1].date <= collect_task.date_from:
+            if api_result.messages[-1].date <= collect_task.date_from:
                 self.log.info(f'[Telegram] All posts collected')
                 break
 
-            if next_rate in api_result.__dict__:
-                next_rate = api_result.next_rate
-            time.sleep(1.5)
         await self.client.disconnect()
 
         maped_posts = self.map_to_posts(posts, collect_task)
         
         self.log.info(f'[Telegram] {len(maped_posts)} posts collected ')
         
-        # valid_posts = validate_posts_by_query(collect_task, maped_posts)
-        maped_posts = await add_search_terms_to_posts(maped_posts, collect_task.monitor_id)
-        # self.log.success(f'[Telegram] {len(valid_posts)} valid posts collected')
+        valid_posts = validate_posts_by_query(collect_task, maped_posts)
+        valid_posts = await add_search_terms_to_posts(valid_posts, collect_task.monitor_id)
+        self.log.success(f'[Telegram] {len(valid_posts)} valid posts collected')
 
-        return maped_posts
+        return valid_posts
 
 
     async def get_hits_count(self, collect_task: CollectTask, connected = False) -> int:
@@ -232,14 +214,13 @@ class TelegramCollector(Datasource):
         if not connected:
             await self.connect()
 
-        params = await self.generate_search_params(collect_task)
+        channel, params = await self.generate_search_params(collect_task)
         
-        if collect_task.accounts and len(collect_task.accounts):
-            hits_count = params['max_id'] - params['min_id']
+        if collect_task.query:
+            messages = await self.client.get_messages(channel, **params)
+            hits_count = messages.total or 0
         else:
-            api_result = await self.client(SearchGlobalRequest(**params))
-            hits_count = 0 if 'count' not in api_result.__dict__ else api_result.count
-        
+            hits_count = params['max_id'] - params['min_id']
         if not connected:
             await self.client.disconnect()
 
