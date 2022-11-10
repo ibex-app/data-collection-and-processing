@@ -1,5 +1,6 @@
 import os
 import time
+from math import floor
 from datetime import datetime
 from telethon.sync import TelegramClient
 from telethon import functions, types
@@ -142,15 +143,18 @@ class TelegramCollector(Datasource):
         else:
             return InputPeerEmpty(), None
 
+
     def get_search_method(self,  collect_task: CollectTask):
         if collect_task.accounts and collect_task.accounts[0]:
             return SearchRequest
         else:
             return SearchGlobalRequest
 
+
     @sleep_after(tag='Telegram', pause_time=1, rang=1)
     async def api_call(self, search_method, params):
         return await self.client(search_method(**params))
+
 
     async def collect(self, collect_task: CollectTask) -> List[Post]:
         """The method is responsible for collecting posts
@@ -235,7 +239,7 @@ class TelegramCollector(Datasource):
         params = await self.generate_search_params(collect_task)
         
         if collect_task.accounts and len(collect_task.accounts):
-            hits_count = params['max_id'] - params['min_id']
+            hits_count = floor(params['max_id'] - params['min_id'] / 4)
         else:
             api_result = await self.client(SearchGlobalRequest(**params))
             hits_count = 0 if 'count' not in api_result.__dict__ else api_result.count
@@ -281,6 +285,7 @@ class TelegramCollector(Datasource):
         
         return post
 
+
     def get_scores(self, api_post):
 
         scores = Scores(
@@ -312,6 +317,7 @@ class TelegramCollector(Datasource):
 
         return scores
 
+
     def map_to_posts(self, posts: List[Dict], collect_task: CollectTask):
         res: List[Post] = []
         for api_post in posts:
@@ -321,6 +327,7 @@ class TelegramCollector(Datasource):
             except ValueError as e:
                 self.log.error(f'[{collect_task.platform}] {e}')
         return res
+
 
     async def get_accounts(self, query: str, limit: int = 5) -> List[Account]:
         self.log.info(f'[Telegram] searching for accounts with query: {query}')
@@ -337,6 +344,7 @@ class TelegramCollector(Datasource):
  
         self.log.info(f'[Telegram] {len(accounts)} found')
         return accounts
+
 
     def map_to_accounts(self, accounts: List) -> List[Account]:
         """The method is responsible for mapping data redudned by plarform api
@@ -355,6 +363,7 @@ class TelegramCollector(Datasource):
             except ValueError as e:
                 self.log.info("Telegram", e)
         return result
+
 
     def map_to_account(self, acc: Account) -> Account:
         mapped_account = Account(

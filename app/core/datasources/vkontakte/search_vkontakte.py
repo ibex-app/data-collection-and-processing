@@ -1,7 +1,7 @@
 import os
 import requests
 import math
-import statistics
+from statistics import mean  
 from typing import List, Dict
 from ibex_models import Post, Scores, CollectTask, Platform, Account
 from datetime import datetime
@@ -198,7 +198,7 @@ class VKCollector(Datasource):
             posting_rates.append((date_ - datetime.utcfromtimestamp(responce['items'][0]['date'])).total_seconds())
             date_ = datetime.utcfromtimestamp(responce['items'][0]['date'])
 
-        mean_posting_rate = statistics.mean(posting_rates)
+        mean_posting_rate = mean(posting_rates)
         # self.log.info(f'[VKonakte] mean_posting_rate hits count {mean_posting_rate}')
         avg_count = ((collect_task.date_to - collect_task.date_from).total_seconds() * offset_step_size)/mean_posting_rate
         # self.log.info(f'[VKonakte] avg_count hits count {avg_count}')

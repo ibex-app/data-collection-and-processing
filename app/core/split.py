@@ -9,11 +9,18 @@ from copy import deepcopy
 from random import randrange
 from datetime import timedelta
 
+import pytz
+utc=pytz.UTC
+
 def random_date_between(start, end):
     """
     This function will return a random datetime between two datetime 
     objects.
     """
+    if not end.tzname():
+        end = utc.localize(end)
+    if not start.tzname():
+        start = utc.localize(start)
     delta = end - start
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
     random_second = randrange(int_delta)
@@ -194,7 +201,11 @@ def split_to_tasks(accounts: List[Account],
     sub_accounts = split_accounts(accounts, collect_action, sample)
     print(f'{len(sub_queries)} sub quer(y/ies) created')
     print(f'{len(sub_accounts)} sub account(s) created')
-
+    
+    if not date_from.tzname():
+        date_from = utc.localize(date_from)
+    if not date_to.tzname():
+        date_to = utc.localize(date_to)
 
     collect_tasks:List[CollectTask] = []
     
@@ -225,14 +236,14 @@ def split_to_tasks(accounts: List[Account],
 
     return collect_tasks
 
-import pytz
 
-utc=pytz.UTC
 
 
 def get_time_intervals(collect_action: CollectAction, monitor: Monitor, date_to: datetime, number_of_intervals:int = 5, sample: bool = False) -> List[Tuple[datetime, datetime]]:
     date_from = monitor.date_from if collect_action.last_collection_date is None else collect_action.last_collection_date 
     date_from = utc.localize(date_from)
+    if not date_to.tzname():
+        date_to = utc.localize(date_from)
     intervals = []
     if sample:
         for i in range(number_of_intervals):
