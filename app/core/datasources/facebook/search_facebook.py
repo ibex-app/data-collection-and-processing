@@ -126,11 +126,15 @@ class FacebookCollector:
             params['endDate'] = None
             self.log.info('[Facebook] Hits count params', params)
             responce = self._collect_posts_by_param(params)
+            if not len(responce["result"]["posts"]):
+                posting_rates.append(0)
+                continue
+                
             time_delta = datetime.fromisoformat(responce["result"]["posts"][0]['date']) - datetime.fromisoformat(responce["result"]["posts"][-1]['date'])
+            posting_rates.append(0 if not time_delta.seconds else len(responce["result"]["posts"])/time_delta.seconds)
             self.log.info(f'[Facebook] Hits count dates -  {time_delta} {len(responce["result"]["posts"])}')
             
 
-            posting_rates.append(0 if not time_delta.seconds else len(responce["result"]["posts"])/time_delta.seconds)
 
         return ceil(mean(posting_rates) * (collect_task.date_to - collect_task.date_from).seconds)
         
