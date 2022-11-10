@@ -110,7 +110,7 @@ class FacebookCollector:
         if collect_task.accounts and len(collect_task.accounts):
             hits_count = await self.get_hits_count_for_account(collect_task)
         else:
-            hits_count = await self.get_hits_count_with_searchterm(collect_task)
+            hits_count = self.get_hits_count_with_searchterm(collect_task)
         self.log.info(f'[Facebook] Hits count - {hits_count}')
         return hits_count
 
