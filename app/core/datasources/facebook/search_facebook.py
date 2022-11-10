@@ -248,7 +248,7 @@ class FacebookCollector:
         return result
 
     def map_to_acc(self, acc) -> Account:
-        self.info.log(acc)
+        self.log.info(acc)
         mapped_acc = Account(
             title=acc['name'],
             url=acc['link'],
