@@ -129,7 +129,7 @@ class FacebookCollector:
             if not len(responce["result"]["posts"]):
                 posting_rates.append(0)
                 continue
-                
+
             time_delta = datetime.fromisoformat(responce["result"]["posts"][0]['date']) - datetime.fromisoformat(responce["result"]["posts"][-1]['date'])
             posting_rates.append(0 if not time_delta.seconds else len(responce["result"]["posts"])/time_delta.seconds)
             self.log.info(f'[Facebook] Hits count dates -  {time_delta} {len(responce["result"]["posts"])}')
@@ -247,7 +247,8 @@ class FacebookCollector:
                 print('Facebook', e)
         return result
 
-    def map_to_acc(self, acc: Account) -> Account:
+    def map_to_acc(self, acc) -> Account:
+        self.info.log(acc)
         mapped_acc = Account(
             title=acc['name'],
             url=acc['link'],
