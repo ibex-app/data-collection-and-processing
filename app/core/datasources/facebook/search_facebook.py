@@ -256,26 +256,3 @@ class FacebookCollector:
             platform_id=acc['id'],
         )
         return mapped_acc
-
-# async def test():
-#     ibex_models.platform import Platform
-#     from app.config.mongo_config import init_mongo
-#     await init_mongo()
-#     date_from = datetime.now() - timedelta(days=5)
-#     date_to = datetime.now() - timedelta(days=1)
-#     accounts = await Account.find(Account.platform == Platform.facebook).to_list()
-#     fb = FacebookCollector()
-#     res = fb.collect_curated_batch(date_from=date_from.isoformat(),
-#                                     date_to=date_to.isoformat(),
-#                                     accounts=accounts)
-#     print(res)
-#
-#
-# if __name__ == "__main__":
-#     import asyncio
-#
-#     asyncio.run(test())
-
-
-
-# os('python3 sample.py monitor_id=128376-81723618-087186238712 sample=True')

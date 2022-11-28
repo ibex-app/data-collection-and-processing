@@ -96,21 +96,3 @@ class TVGeorgiaCollector:
                 self.log.error(f'[TV Georgia] {e}')
         return res
 
-
-# async def test():
-#     ibex_models.platform import Platform
-#     from app.config.mongo_config import init_mongo
-#     await init_mongo()
-#     date_from = datetime.now() - timedelta(days=5)
-#     date_to = datetime.now() - timedelta(days=1)
-#     accounts = await Account.find(Account.platform == Platform.geotv).to_list()
-#     geotv = TVGeorgiaCollector()
-#     res = geotv.collect_curated_single(date_from=date_from,
-#                                         date_to=date_to,
-#                                         account=accounts[0])
-#     print(res)
-#
-#
-# if __name__ == "__main__":
-#     import asyncio
-#     asyncio.run(test())

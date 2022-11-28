@@ -342,26 +342,3 @@ class TwitterCollector:
         )
         return mapped_account
 
-# async def test():
-#     from app.config.mongo_config import init_mongo
-#     await init_mongo()
-#     twitter = TwitterCollector()
-#     # account = await Account.find_one()
-#     account = Account(title='', platform_id='katyperry', platform=Platform.twitter, url='')
-#     account2 = Account(title='', platform_id='ddlovato', platform=Platform.twitter, url='')
-#     res = twitter.collect_curated_batch(
-#         accounts=[account, account2],
-#         date_from=datetime.today() - timedelta(days=7),
-#         date_to=datetime.today() - timedelta(minutes=2))
-#     print(res[0])
-#
-#
-# if __name__ == "__main__":
-#     # tweet_fields = [e for e in TweetFields]
-#     # place_fields = [e for e in PlaceFields]
-#     # user_fields = [e for e in UserFields]
-#     import asyncio
-#     asyncio.run(test())
-#     # for obj in res.iterrows():
-#     #     o = obj[1]
-#     #     post = TwitterCollector.map_to_post(o)
