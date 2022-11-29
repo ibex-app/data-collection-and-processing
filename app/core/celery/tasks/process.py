@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+from dotenv import load_dotenv
 
 from app.config.logging_config import log
 from app.util.model_utils import deserialize_from_base64
@@ -16,6 +17,8 @@ def process(task: str):
     if task.processor not in processor_classes.keys():
         log.info(f"No implementation for platform [{task.processor}] found! skipping..")
         return
+
+    # load_dotenv(f'/home/.{task.env.lower()}.env')
 
     processor_class = processor_classes[task.processor]()
     processor_method = processor_class.process

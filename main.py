@@ -14,9 +14,9 @@ from app.config.mongo_config import init_mongo
 from ibex_models.monitor import Monitor, MonitorStatus
 
 
-async def populate_collector_tasks(monitor_id:UUID, sample:bool):
+async def populate_collector_tasks(monitor_id:UUID, env:str, sample:bool):
     await init_mongo()
-    collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, sample)
+    collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, env, sample)
     if not collector_tasks:
         return
     g = group(collector_tasks)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     print(f'Running data collection fo monitor_id {monitor_id}, download_media: {download_media}, sample: {sample} ')
     
-    asyncio.run(populate_collector_tasks(monitor_id, sample))
+    asyncio.run(populate_collector_tasks(monitor_id, env, sample))
     if download_media and not sample:
         pass
         asyncio.run(populate_downloader_tasks(monitor_id))

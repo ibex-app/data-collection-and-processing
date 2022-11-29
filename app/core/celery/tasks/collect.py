@@ -13,6 +13,7 @@ from app.core.dao.post_dao import insert_posts
 from ibex_models import CollectTask, Post, CollectTaskStatus
 from app.config.mongo_config import init_mongo
 from time import sleep
+from dotenv import load_dotenv
 
 @celery.task(name='app.core.celery.tasks.collect')
 def collect(collect_task: str):
@@ -25,6 +26,9 @@ def collect(collect_task: str):
     if collect_task.platform not in collector_classes.keys():
         log.info(f"No implementation for platform [{collect_task.platform}] found! skipping..")
         return
+
+    load_dotenv(f'/home/.{collect_task.env.lower()}.env')
+    
     asyncio.run(set_task_status(collect_task, CollectTaskStatus.is_running))
     collector_class = collector_classes[collect_task.platform]()
     

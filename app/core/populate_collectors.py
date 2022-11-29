@@ -20,14 +20,14 @@ from uuid import UUID
 utc=pytz.UTC
 
 
-async def get_collector_tasks(monitor_id:UUID, sample: bool = False) -> List[chain or group]:
+async def get_collector_tasks(monitor_id:UUID, env: str, sample: bool = False) -> List[chain or group]:
     if sample:
         # await CollectTask.find(CollectTask.monitor_id == monitor_id).delete()
         pass
     
     monitor = await Monitor.find_one(Monitor.id == monitor_id)
     collect_actions: List[CollectAction] = await get_collect_actions(monitor_id)
-    tasks_group: List[chain or group] = await to_tasks_group(collect_actions, monitor, sample)
+    tasks_group: List[chain or group] = await to_tasks_group(collect_actions, monitor, env, sample)
     return tasks_group
 
 
@@ -56,12 +56,13 @@ def generate_hits_count_tasks(collect_action: CollectAction,
                               accounts: List[Account],
                               search_terms: List[SearchTerm],
                               date_to: datetime,
+                              env: str,
                               sample: bool=False) -> List[CollectTask]:
     hits_count_tasks: List[CollectTask] = []
 
     if search_terms and len(search_terms) > 0:
         for search_term in search_terms:
-            hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [search_term], collect_action, monitor.date_from, date_to, sample)
+            hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [search_term], collect_action, monitor.date_from, date_to, env, sample)
 
             for hits_count_task in hits_count_tasks_:
                 hits_count_task.get_hits_count = True
@@ -70,7 +71,7 @@ def generate_hits_count_tasks(collect_action: CollectAction,
 
             hits_count_tasks += hits_count_tasks_
     elif accounts and len(accounts):
-        hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [], collect_action, monitor.date_from, date_to, sample)
+        hits_count_tasks_: List[CollectTask] = split_to_tasks(accounts, [], collect_action, monitor.date_from, date_to, env, sample)
         for hits_count_task in hits_count_tasks_:
             hits_count_task.get_hits_count = True
             
@@ -78,7 +79,7 @@ def generate_hits_count_tasks(collect_action: CollectAction,
     return hits_count_tasks
 
 
-async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor, sample:bool=False) -> List[CollectTask]:
+async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor, env: str, sample:bool=False) -> List[CollectTask]:
     """
         if the collection process is curated and batch collection is
         possible collect all data sources at once,
@@ -112,6 +113,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
                                                         accounts_for_hits_count,
                                                         search_terms_for_hits_count,
                                                         date_to,
+                                                        env,
                                                         sample)
 
             # if len(hits_count_tasks):
@@ -137,7 +139,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
                 accounts, search_terms = remove_collected_samples(collect_action, accounts, search_terms, finalized_samplings_ids)
                 print(f'Using {len(accounts)} new account(s) for sampling')
                 print(f'Using {len(search_terms)} new search term(s) for sampling')
-            collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, sample)
+            collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, env, sample)
             print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
         
                 

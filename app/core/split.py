@@ -190,7 +190,8 @@ def split_to_tasks(accounts: List[Account],
                    search_terms: List[SearchTerm], 
                    collect_action: CollectAction, 
                    date_from: datetime, 
-                   date_to: datetime, 
+                   date_to: datetime,
+                   env: str, 
                    sample: bool=False) -> List[CollectTask]:
 
     if collect_action.platform == Platform.youtube:
@@ -213,7 +214,8 @@ def split_to_tasks(accounts: List[Account],
         date_from=date_from,
         date_to=date_to,
         monitor_id=collect_action.monitor_id,
-        sample=sample
+        sample=sample,
+        env=env
     )
     if len(sub_accounts) > 0 and len(sub_queries) > 0:
         for sub_accounts_chunk in sub_accounts:
