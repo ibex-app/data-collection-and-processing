@@ -27,7 +27,8 @@ async def init_mongo():
     """
     Initialize a connection to MongoDB
     """
-    client = AsyncIOMotorClient(DB.connection_string)
+    connection_string = os.getenv('MONGO_CS')
+    client = AsyncIOMotorClient(connection_string)
     await init_beanie(database=client.ibex, document_models=[CollectAction, 
                                                              Account, 
                                                              SearchTerm, 
