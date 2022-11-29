@@ -28,7 +28,11 @@ def collect(collect_task: str):
         return
 
     load_dotenv(f'/home/.{collect_task.env.lower()}.env')
-    
+    print('loading from', f'/home/.{collect_task.env.lower()}.env')
+    import os
+
+    for name, value in os.environ.items():
+        print("{0}: {1}".format(name, value))
     asyncio.run(set_task_status(collect_task, CollectTaskStatus.is_running))
     collector_class = collector_classes[collect_task.platform]()
     
