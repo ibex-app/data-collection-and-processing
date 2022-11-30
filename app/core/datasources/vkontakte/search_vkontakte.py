@@ -251,7 +251,7 @@ class VKCollector(Datasource):
         return res
 
     # @abstractmethod
-    async def get_accounts(self, query, limit: int = 5) -> List[Account]:
+    async def get_accounts(self, query, env:str = None, limit: int = 5) -> List[Account]:
         """The method is responsible for collecting Accounts
               from platforms.
           Args:

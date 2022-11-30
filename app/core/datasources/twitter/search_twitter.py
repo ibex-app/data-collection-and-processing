@@ -71,8 +71,7 @@ class UserFields(Enum):
 
 @slf
 class TwitterCollector:
-    yaml_path = "/root/data-collection-and-processing/app/core/datasources/twitter/.twitter_keys.yaml"
-    # yaml_path = ".twitter_keys.yaml"
+    
 
     def __init__(self, *args, **kwargs):
         self.max_posts_per_call = 100 # 500 for premium/academic account?
@@ -82,15 +81,17 @@ class TwitterCollector:
         self.max_requests_sample = 1
 
         self._set_fields(**kwargs)
-        # TODO use env vars instead of file
-        self.search_args = load_credentials(self.yaml_path, yaml_key="search_tweets_v2", env_overwrite=False)
-        self.count_args = load_credentials(self.yaml_path, yaml_key="count_tweets_v2", env_overwrite=False)
 
     @staticmethod
     def _set_field(field, **kwargs):
         if field in kwargs:
             return ','.join([e.value for e in kwargs[field]])
         return None
+    
+    def load_credentials(self, collect_task:CollectTask):
+        self.yaml_path = f"/home/.{collect_task.env}.twitter_keys.yaml"
+        self.search_args = load_credentials(self.yaml_path, yaml_key="search_tweets_v2", env_overwrite=False)
+        self.count_args = load_credentials(self.yaml_path, yaml_key="count_tweets_v2", env_overwrite=False)
 
 
     def _set_fields(self, *args, **kwargs):
@@ -114,6 +115,7 @@ class TwitterCollector:
         return query
 
     async def collect(self, collect_task: CollectTask) -> List[Post]:
+        self.load_credentials(collect_task)
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
 
@@ -145,6 +147,7 @@ class TwitterCollector:
         return valid_posts
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
+        self.load_credentials(collect_task)
         params = gen_request_parameters(
             query = self.build_the_query(collect_task) + ' -is:retweet',
             granularity='hour',
@@ -285,7 +288,7 @@ class TwitterCollector:
                 self.log.error(f'[Twitter] {e}')
         return posts
 
-    async def get_accounts(self, query, limit: int = 5) -> List[Account]:
+    async def get_accounts(self, query, env:str = None, limit: int = 5) -> List[Account]:
         """The method is responsible for collecting Accounts
               from platforms.
           Args:
@@ -294,6 +297,7 @@ class TwitterCollector:
           Returns:
               (List[Account]): List of collected accounts.
           """
+        
         self.log.info(f'[Twitter] searching for accounts with query: {query}')
         # parameter for generated metadata
         API_KEY = os.getenv('TWITTER_API_KEY')

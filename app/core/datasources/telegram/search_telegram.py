@@ -55,10 +55,10 @@ class TelegramCollector(Datasource):
         return None if len(first_msg) == 0 else first_msg[0].id, None if len(last_msg) == 0 else last_msg[0].id
 
 
-    async def connect(self):
+    async def connect(self, env: str):
          # Variable for TelegramClient instance
         self.log.info('[Telegram] trying to connect...')
-        self.client = TelegramClient('/root/data-collection-and-processing/ibex.session', self.id, self.hash)
+        self.client = TelegramClient(f'/main/.{env}.telegram.session', self.id, self.hash)
         self.log.info('[Telegram] TelegramClient inited...')
         try:
             self.log.info('[Telegram] self.client.disconnect()...')
@@ -170,7 +170,7 @@ class TelegramCollector(Datasource):
         
         # Boolean variable for looping through pages.
         
-        await self.connect()
+        await self.connect(collect_task.env)
 
         requests_count = 0
         posts = []
@@ -234,7 +234,7 @@ class TelegramCollector(Datasource):
         if collect_task.query and (' AND ' in collect_task.query or ' OR ' in collect_task.query):
             return -1
         if not connected:
-            await self.connect()
+            await self.connect(collect_task.env)
 
         params = await self.generate_search_params(collect_task)
         
@@ -329,9 +329,9 @@ class TelegramCollector(Datasource):
         return res
 
 
-    async def get_accounts(self, query: str, limit: int = 5) -> List[Account]:
+    async def get_accounts(self, query: str, env:str = None,  limit: int = 5) -> List[Account]:
         self.log.info(f'[Telegram] searching for accounts with query: {query}')
-        await self.connect()   
+        await self.connect(env)
 
         dialogs = await self.client(functions.contacts.SearchRequest(
             q=query,

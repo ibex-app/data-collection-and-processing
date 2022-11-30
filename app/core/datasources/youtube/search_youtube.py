@@ -189,7 +189,7 @@ class YoutubeCollector:
 
 
     
-    async def get_accounts(self, query:str, limit: int = 5)-> List[Account]:
+    async def get_accounts(self, query:str, env:str = None, limit: int = 5)-> List[Account]:
         self.log.info(f'[Youtube] searching for accounts with query: {query}')
         params = dict(
             part='snippet',

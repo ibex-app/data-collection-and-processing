@@ -213,7 +213,7 @@ class FacebookCollector:
         return res
 
 
-    async def get_accounts(self, query, limit: int = 5) -> List[Account]:
+    async def get_accounts(self, query, env:str = None, limit: int = 5) -> List[Account]:
         self.log.info(f'[Facebook] searching for accounts with query: {query}')
 
         params = dict(
