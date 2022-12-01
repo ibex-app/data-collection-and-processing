@@ -26,8 +26,7 @@ def random_date_between(start, end):
     random_second = randrange(int_delta)
     return start + timedelta(seconds=random_second)
     
-from faker import Faker
-fake = Faker()
+
 
 boolean_operators = dict()
 boolean_operators[Platform.facebook] = dict(
