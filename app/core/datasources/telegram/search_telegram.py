@@ -58,7 +58,7 @@ class TelegramCollector(Datasource):
     async def connect(self, env: str):
          # Variable for TelegramClient instance
         self.log.info('[Telegram] trying to connect...')
-        self.client = TelegramClient(f'/main/.{env}.telegram.session', self.id, self.hash)
+        self.client = TelegramClient(f'/home/.{env}.telegram.session', self.id, self.hash)
         self.log.info('[Telegram] TelegramClient inited...')
         try:
             self.log.info('[Telegram] self.client.disconnect()...')
