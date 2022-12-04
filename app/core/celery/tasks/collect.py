@@ -84,17 +84,18 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
 
 
     collect_task_ = await CollectTask.get(collect_task.id)
-    try:
-        collected_posts: List[Post] = await collector_method(collect_task)
-        
-        for post in collected_posts:
-            post.monitor_ids = [collect_task.monitor_id]
+    # try:
+    collected_posts: List[Post] = await collector_method(collect_task)
+    
+    for post in collected_posts:
+        post.monitor_ids = [collect_task.monitor_id]
 
-        count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
-        collect_task_.status = CollectTaskStatus.finalized
-        print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
-    except Exception as e: 
-        log.error(f'Failed to collect posts:')
-        print(f'Failed to collect posts:',e , collect_task )
-        collect_task_.status = CollectTaskStatus.failed
+    count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
+    collect_task_.status = CollectTaskStatus.finalized
+    print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
+    # except Exception as e: 
+    #     log.error(f'Failed to collect posts:')
+    #     print(f'Failed to collect posts:',e , collect_task )
+    #     collect_task_.status = CollectTaskStatus.failed
+
     await collect_task_.save()
