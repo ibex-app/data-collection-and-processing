@@ -7,6 +7,7 @@ from ibex_models import Account, SearchTerm, CollectAction, Post, Tag, CollectTa
 
 import asyncio
 import os
+import pymongo
 
 class DBConstants:
     prefix = '../../'
@@ -17,11 +18,17 @@ class DBConstants:
     search_terms = 'search_terms'
     search_terms_path = f'{prefix}resources/search_terms.json'
     # TODO: Move to env
-    connection_string = os.getenv('MONGO_CS')
+    # connection_string = lambda: os.getenv('MONGO_CS')
     connection_string_local = "mongodb://127.0.0.1:27017/"    
 
 DB = DBConstants
 
+def init_pymongo(collection_name):
+    connection_string = os.getenv('MONGO_CS')
+    client = pymongo.MongoClient(connection_string)
+    db = client["ibex"]
+    collection = db[collection_name]
+    return collection
 
 async def init_mongo():
     """

@@ -11,7 +11,7 @@ from app.config.logging_config import log
 from app.util.model_utils import serialize_to_base64
 from app.core.dao.collect_actions_dao import get_collect_actions
 from ibex_models import CollectAction, CollectTask, Account, SearchTerm, Platform, Monitor, CollectTaskStatus, collect_task
-from app.config.mongo_config import DBConstants 
+from app.config.mongo_config import init_pymongo
 
 from app.core.celery.tasks.collect import collect 
 from app.core.split import get_time_intervals, split_to_tasks
@@ -194,9 +194,7 @@ from uuid import UUID
 from itertools import chain
 
 async def get_sampled_ids(monitor:Monitor):
-    client = pymongo.MongoClient(DBConstants.connection_string)
-    mydb = client["ibex"]
-    posts_collection = mydb["posts"]
+    posts_collection = init_pymongo("posts")
     collect_tasks_for_accounts = await CollectTask.find(CollectTask.monitor_id == monitor.id,
                                                         Exists(CollectTask.accounts, True),
                                                         CollectTask.sample == True,

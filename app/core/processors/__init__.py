@@ -11,6 +11,7 @@ from app.core.processors.topic.topic import TopicProcessor
 from app.core.processors.botscore.botscore import BotscoreProcessor
 from app.core.processors.top_engagement.top_engagement import TopEngagementProcessor
 from app.core.processors.detect_search_terms.detect_search_terms import DetectSearchTerms  
+from app.core.processors.detect_language.detect_language import DetectLanguage
 
 
 processor_classes = {
@@ -23,5 +24,6 @@ processor_classes = {
     Processor.topic : TopicProcessor,
     Processor.botscore : BotscoreProcessor,
     Processor.detect_search_terms: DetectSearchTerms,
-    Processor.top_engagement: TopEngagementProcessor
+    Processor.top_engagement: TopEngagementProcessor,
+    Processor.detect_language: DetectLanguage
 }

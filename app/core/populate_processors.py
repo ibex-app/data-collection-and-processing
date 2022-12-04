@@ -31,7 +31,8 @@ async def get_processor_tasks(monitor_id:UUID):
     
     # process_tasks.append(ProcessTaskBatch(processor=Processor.top_engagement, monitor_id=monitor_id))
 
-    process_tasks.append(ProcessTaskBatch(processor=Processor.topic, monitor_id=monitor_id))
+    process_tasks.append(ProcessTaskBatch(processor=Processor.detect_language, monitor_id=monitor_id))
+    # process_tasks.append(ProcessTaskBatch(processor=Processor.topic, monitor_id=monitor_id))
 
     print(f'single topic labeling process tasks created... for monitor {monitor_id}')
 

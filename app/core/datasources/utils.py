@@ -7,6 +7,7 @@ from app.core.split import split_complex_query
 from app.core.declensions import get_declensions
 from app.config.logging_config import log
 from uuid import UUID
+import langid
 
 from ibex_models.platform import Platform
 
