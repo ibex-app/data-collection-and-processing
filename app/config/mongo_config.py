@@ -25,7 +25,7 @@ DB = DBConstants
 
 def init_pymongo(collection_name):
     connection_string = os.getenv('MONGO_CS')
-    client = pymongo.MongoClient(connection_string)
+    client = pymongo.MongoClient(connection_string, uuidRepresentation="pythonLegacy")
     db = client["ibex"]
     collection = db[collection_name]
     return collection
