@@ -183,7 +183,7 @@ class FacebookCollector:
             title = api_post['message']
 
         url = api_post['postUrl'] if 'postUrl' in api_post.keys() else None
-            
+        print(api_post)
         post = Post(title=title,
                     text=api_post['description'] if 'description' in api_post else "",
                     created_at=datetime.fromisoformat(api_post['date']) if 'date' in api_post else datetime.now(),
