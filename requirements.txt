@@ -1,8 +1,8 @@
-pymongo
+pymongo==3.13.0
 colorama
 searchtweets-v2==1.1.1
 pandas
-beanie
+beanie==1.8.6
 pydantic
 motor
 celery
