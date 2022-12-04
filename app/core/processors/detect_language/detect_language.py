@@ -47,6 +47,6 @@ class DetectLanguage:
         if len(detected_lang) == 0:
             return post
 
-        post['language'] = detected_lang[0]
+        post['language'] = detected_lang
 
         return post
