@@ -19,7 +19,7 @@ def process(task: str):
 
     load_dotenv(f'/home/.{task.env.lower()}.env')
     
-    print(f'/home/.{task.env.lower()}.env', task)
+    print(f'Loading environment variables from /home/.{task.env.lower()}.env', task)
 
     processor_class = processor_classes[task.processor]()
     processor_method = processor_class.process
