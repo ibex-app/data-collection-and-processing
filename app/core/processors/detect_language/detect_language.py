@@ -26,10 +26,11 @@ class DetectLanguage:
         for i, post in enumerate(posts_):
             if i % 50 == 0: self.log.info(f'[DetectLanguage] {i} posts processed')
             post = self.set_lang(post)
-            if 'process_applied' not in post:
+            if 'process_applied' not in post or not post['process_applied']:
                 post['process_applied'] = []
             
             post['process_applied'].append(Processor.detect_language)
+
             posts_collection.replace_one({'_id': post['_id']}, post)
             # await post.save()
 
