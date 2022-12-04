@@ -13,7 +13,7 @@ class DetectLanguage:
 
         posts_collection = init_pymongo('posts')
         posts = posts_collection.find({
-                'monitor_id' : {'$in': [UUID(task.monitor_id)]}, 
+                'monitor_id' : {'$in': [task.monitor_id]}, 
                 'process_applied' : {'$nin': [Processor.detect_language]}
             })        
 
