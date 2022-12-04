@@ -26,10 +26,12 @@ class DetectLanguage:
         for i, post in enumerate(posts_):
             if i % 50 == 0: self.log.info(f'[DetectLanguage] {i} posts processed')
             post = self.set_lang(post)
-            if not hasattr(post, 'process_applied'):
-                post.process_applied = []
-            post.process_applied.append(Processor.detect_language)
-            await post.save()
+            if 'process_applied' not in post:
+                post['process_applied'] = []
+            
+            post['process_applied'].append(Processor.detect_language)
+            posts_collection.replace_one({'_id': post['_id']}, post)
+            # await post.save()
 
         self.log.info(f'[DetectLanguage] all posts processed')
         return True
@@ -44,6 +46,6 @@ class DetectLanguage:
         if len(detected_lang) == 0:
             return post
 
-        post.language = detected_lang[0]
+        post['language'] = detected_lang[0]
 
         return post
