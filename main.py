@@ -23,7 +23,7 @@ async def populate_collector_tasks(monitor_id:UUID, env:str, sample:bool):
     g.delay().get()
 
     monitor = await Monitor.get(monitor_id)
-    monitor.status = MonitorStatus.sampled if sample else MonitorStatus.collected
+    monitor.status = MonitorStatus.sampled if sample else MonitorStatus.live if monitor.date_to else MonitorStatus.finalized
     await monitor.save()
     print(f'collection complated, monitor_id, sample : {monitor_id}, {sample}')
 
