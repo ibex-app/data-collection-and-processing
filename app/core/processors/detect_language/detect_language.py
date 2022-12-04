@@ -23,7 +23,7 @@ class DetectLanguage:
         self.log.info(f'[DetectLanguage] {task.monitor_id} in process task')
 
         posts_collection = init_pymongo('posts')
-        posts = posts_collection.find({'monitor_id' : {'$in': [task.monitor_id]}}, {'process_applied' : {'$nin': [Processor.detect_language]}})        
+        posts = posts_collection.find({'monitor_id' : {'$in': [task.monitor_id]}, 'process_applied' : {'$nin': [Processor.detect_language]}})        
 
         for post in posts:
             post = self.set_lang(post)
