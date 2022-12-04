@@ -18,7 +18,7 @@ def process(task: str):
         log.info(f"No implementation for platform [{task.processor}] found! skipping..")
         return
 
-    # load_dotenv(f'/home/.{task.env.lower()}.env')
+    load_dotenv(f'/home/.{task.env.lower()}.env')
 
     processor_class = processor_classes[task.processor]()
     processor_method = processor_class.process

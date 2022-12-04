@@ -28,7 +28,7 @@ async def populate_collector_tasks(monitor_id:UUID, env:str, sample:bool):
     print(f'collection complated, monitor_id, sample : {monitor_id}, {sample}')
 
 
-async def populate_downloader_tasks(monitor_id:UUID):
+async def populate_downloader_tasks(monitor_id:UUID, env:str):
     await init_mongo()
     downloader_tasks: List[xmap or group] = await get_downloader_tasks(monitor_id)
     if not downloader_tasks:
@@ -37,9 +37,9 @@ async def populate_downloader_tasks(monitor_id:UUID):
     g.delay().get()
 
 
-async def populate_processor_tasks(monitor_id:UUID):
+async def populate_processor_tasks(monitor_id:UUID, env:str):
     await init_mongo()
-    processor_tasks: List[xmap or group] = await get_processor_tasks(monitor_id)
+    processor_tasks: List[xmap or group] = await get_processor_tasks(monitor_id, env)
     print(f'{len(processor_tasks)} processor_tasks created')
     if not processor_tasks:
         return
@@ -70,10 +70,10 @@ if __name__ == '__main__':
     asyncio.run(populate_collector_tasks(monitor_id, env, sample))
     if download_media and not sample:
         pass
-        asyncio.run(populate_downloader_tasks(monitor_id))
+        asyncio.run(populate_downloader_tasks(monitor_id, env))
 
     if not sample:
         pass
-        asyncio.run(populate_processor_tasks(monitor_id))
+        asyncio.run(populate_processor_tasks(monitor_id, env))
         
     
