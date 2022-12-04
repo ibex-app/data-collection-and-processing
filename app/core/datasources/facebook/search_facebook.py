@@ -188,7 +188,7 @@ class FacebookCollector:
                     created_at=datetime.fromisoformat(api_post['date']) if 'date' in api_post else datetime.now(),
                     platform=Platform.facebook,
                     platform_id=api_post['platformId'] if '_' not in api_post['platformId'] else api_post['platformId'].split('_')[1],
-                    author_platform_id=api_post['account']['platformId'],
+                    author_platform_id=api_post['account']['platformId'] if 'platformId' in api_post['account'] else api_post['account']['handle'],
                     scores=scores,
                     api_dump=api_post,
                     url=url)
