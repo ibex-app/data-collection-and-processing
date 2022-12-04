@@ -25,18 +25,23 @@ class DetectLanguage:
         posts_collection = init_pymongo('posts')
         posts = posts_collection.find({'monitor_id' : {'$in': [task.monitor_id]}, 'process_applied' : {'$nin': [Processor.detect_language]}})        
 
-        for post in posts:
+        posts_ = list(posts)
+        self.log.info(f'[DetectLanguage] {len(posts_)} to process')
+
+        for i, post in enumerate(posts_):
+            if i % 50 == 0: self.log.info(f'[DetectLanguage] {i} posts processed')
             post = self.set_lang(post)
             if not hasattr(post, 'process_applied'):
                 post.process_applied = []
             post.process_applied.append(Processor.detect_language)
             await post.save()
 
+        self.log.info(f'[DetectLanguage] all posts processed')
         return True
 
 
     def set_lang(self, post:Post):
-        post_text = post.text + ' ' + post.title
+        post_text = post['text'] + ' ' + post['title']
         if not post_text:
             return post
         

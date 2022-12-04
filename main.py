@@ -73,7 +73,6 @@ if __name__ == '__main__':
         asyncio.run(populate_downloader_tasks(monitor_id, env))
 
     if not sample:
-        pass
         asyncio.run(populate_processor_tasks(monitor_id, env))
         
     
