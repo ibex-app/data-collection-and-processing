@@ -12,8 +12,8 @@ async def get_processor_tasks(monitor_id:UUID, env:str):
     # singular_processors
     process_tasks: List[ProcessTask] = []
 
-    posts:List[Post] = await Post.find(In(Post.monitor_ids, [monitor_id])).to_list()
-    posts_for_speech_to_text:List[Post] = [post for post in posts if post.media_status == MediaStatus.downloaded]
+    # posts:List[Post] = await Post.find(In(Post.monitor_ids, [monitor_id])).to_list()
+    # posts_for_speech_to_text:List[Post] = [post for post in posts if post.media_status == MediaStatus.downloaded]
     
     # if len(posts_for_speech_to_text) == 0:
     #     tasks_for_speech_to_text: List[ProcessTask] = [ProcessTask(post=post_to_process, processor=Processor.speech_to_text, monitor_id=monitor_id) for post_to_process in posts_for_speech_to_text]
