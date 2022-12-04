@@ -58,7 +58,7 @@ class FacebookCollector:
             params['accounts'] = ','.join([account.platform_id for account in collect_task.accounts])
         else:
             params['platforms']='facebook'
-        self.log.success(f'[Facebook] requests params has been generated: {params}.')
+        # self.log.success(f'[Facebook] requests params has been generated: {params}.')
         return params
 
 
@@ -124,7 +124,7 @@ class FacebookCollector:
             params  = self.generate_request_params(collect_task_)
             params['count'] = self.max_posts_per_call
             params['endDate'] = None
-            self.log.info('[Facebook] Hits count params', params)
+            # self.log.info('[Facebook] Hits count params', params)
             responce = self._collect_posts_by_param(params)
             if not len(responce["result"]["posts"]):
                 posting_rates.append(0)
@@ -142,9 +142,9 @@ class FacebookCollector:
     def get_hits_count_with_searchterm(self, collect_task: CollectTask) -> int:
         params  = self.generate_request_params(collect_task)
         params['count'] = 0
-        self.log.info('[Facebook] Hits count params', params)
+        # self.log.info('[Facebook] Hits count params', params)
         responce = self._collect_posts_by_param(params)
-        self.log.info('[Facebook] Hits count responce', responce)
+        # self.log.info('[Facebook] Hits count responce', responce)
         if responce["status"] != 200:
             hits_count = -2
         elif 'hitCount' not in responce["result"]:
