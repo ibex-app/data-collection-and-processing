@@ -8,7 +8,7 @@ from statistics import mean
 from typing import List, Dict
 from math import ceil
 
-from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask
+from ibex_models import Account, SearchTerm, Post, Scores, Platform, CollectTask, Processor
 from app.config.aop_config import sleep_after, slf
 from app.core.datasources.facebook.helper import split_to_chunks, needs_download
 from app.core.datasources.utils import update_hits_count, validate_posts_by_query, add_search_terms_to_posts, set_account_id, set_total_engagement
@@ -183,17 +183,19 @@ class FacebookCollector:
             title = api_post['message']
 
         url = api_post['postUrl'] if 'postUrl' in api_post.keys() else None
-        print(api_post)
         post = Post(title=title,
                     text=api_post['description'] if 'description' in api_post else "",
                     created_at=datetime.fromisoformat(api_post['date']) if 'date' in api_post else datetime.now(),
                     platform=Platform.facebook,
-                    platform_id=api_post['platformId'].split('_')[1],
+                    platform_id=api_post['platformId'] if '_' not in api_post['platformId'] else api_post['platformId'].split('_')[1],
                     author_platform_id=api_post['account']['platformId'],
                     scores=scores,
                     api_dump=api_post,
-                #  monitor_id=collect_task.monitor_id,
                     url=url)
+        
+        if 'languageCode' in api_post and api_post['languageCode'] != 'und': 
+            post.language = api_post['languageCode']
+            post.process_applied = [Processor.detect_language]
 
         post = set_account_id(post, collect_task)
         post = set_total_engagement(post)
