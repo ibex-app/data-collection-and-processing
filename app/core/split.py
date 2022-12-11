@@ -108,7 +108,7 @@ def strip_and_append(all_queries, full_query, or_operator):
     return all_queries
 
 
-def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, accounts: List[Account]):
+def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction, accounts: List[Account], use_declensions: bool = False):
     terms:List[str] = [search_term.term for search_term in search_terms]
 
     all_queries = []
@@ -138,10 +138,14 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
     # print(f'terms --- {len(terms)}' )
     for keyword in terms:
         if ' OR ' not in keyword and ' AND ' not in keyword and ' NOT ' not in keyword:
-            try:
-                decls = get_declensions([keyword], langid.classify(keyword)[0])
-            except:
+            if use_declensions:
+                try:
+                    decls = get_declensions([keyword], langid.classify(keyword)[0])
+                except:
+                    decls = [keyword]
+            else:
                 decls = [keyword]
+
             
             single_term = f'{operators["or_"]}'.join([f'"{word}"' for word in decls])
             # print(f'decls --- {decls}' )
@@ -151,10 +155,13 @@ def split_queries(search_terms: List[SearchTerm], collect_action: CollectAction,
 
             words_decls = []
             for word in words:
-                try:
-                    declensions = get_declensions([word], langid.classify(word)[0])
-                    words_decls.append(declensions)
-                except:
+                if use_declensions:
+                    try:
+                        declensions = get_declensions([word], langid.classify(word)[0])
+                        words_decls.append(declensions)
+                    except:
+                        words_decls.append([word])
+                else:
                     words_decls.append([word])
 
             # join all declancions into single query string separated by or statement
@@ -191,12 +198,13 @@ def split_to_tasks(accounts: List[Account],
                    date_from: datetime, 
                    date_to: datetime,
                    env: str, 
-                   sample: bool=False) -> List[CollectTask]:
+                   sample: bool=False, 
+                   use_declensions: bool = False) -> List[CollectTask]:
 
     if collect_action.platform == Platform.youtube:
         sub_queries = split_queries_youtube(search_terms, collect_action, accounts)
     else:
-        sub_queries = split_queries(search_terms, collect_action, accounts)
+        sub_queries = split_queries(search_terms, collect_action, accounts, use_declensions)
 
     sub_accounts = split_accounts(accounts, collect_action, sample)
     print(f'{len(sub_queries)} sub quer(y/ies) created')

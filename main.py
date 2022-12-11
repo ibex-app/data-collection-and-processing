@@ -14,9 +14,9 @@ from app.config.mongo_config import init_mongo
 from ibex_models.monitor import Monitor, MonitorStatus
 
 
-async def populate_collector_tasks(monitor_id:UUID, env:str, sample:bool):
+async def populate_collector_tasks(monitor_id:UUID, env:str, sample:bool, use_declensions:bool):
     await init_mongo()
-    collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, env, sample)
+    collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, env, sample, use_declensions)
     if not collector_tasks:
         return
     g = group(collector_tasks)
@@ -54,6 +54,7 @@ if __name__ == '__main__':
     parser.add_argument('--env', type=str, help='Sub domain of celery instance', required=True )
     parser.add_argument('--skip_collection', type=str, help='Skipping data collection, to apply processors on collected data', required=False )
     parser.add_argument('--sample', action='store_true', help='If True, sample data is collected', required=False, default=False)
+    parser.add_argument('--use_declensions', action='store_true', help='If True, the declensions will be added to search terms', required=False, default=False)
 
 
     args = parser.parse_args()
@@ -62,12 +63,14 @@ if __name__ == '__main__':
     sample = getattr(args, 'sample')
     env = getattr(args, 'env')
     download_media = getattr(args, 'download_media')
+    use_declensions = getattr(args, 'use_declensions')
     
     load_dotenv(f'/home/.{env.lower()}.env')
 
-    print(f'Running data collection fo monitor_id {monitor_id}, download_media: {download_media}, sample: {sample} ')
+    print(f'Running data collection fo monitor_id {monitor_id}, download_media: {download_media}, sample: {sample}, use_declensions: {use_declensions}')
     
-    asyncio.run(populate_collector_tasks(monitor_id, env, sample))
+    asyncio.run(populate_collector_tasks(monitor_id, env, sample, use_declensions))
+
     if download_media and not sample:
         pass
         asyncio.run(populate_downloader_tasks(monitor_id, env))

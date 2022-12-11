@@ -167,6 +167,8 @@ class FacebookCollector:
             sad_count = actual_statistics['sadCount'] if 'sadCount' in actual_statistics else None
             angry_count = actual_statistics['angryCount'] if 'angryCount' in actual_statistics else None
             engagement = actual_statistics['commentCount'] if 'commentCount' in actual_statistics else None
+            wiews --= = actual_statistics['commentCount'] if 'commentCount' in actual_statistics else None
+
             scores = Scores(likes=likes,
                             shares=shares,
                             love=love_count,
