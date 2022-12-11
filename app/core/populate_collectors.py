@@ -125,7 +125,7 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # Generating time intervals here,
         # for actual data collection it would be from last collection date to now
         # for sample collection it would return 10 random intervals between start end end dates
-        time_intervals = get_time_intervals(collect_action, monitor, date_to, 1, sample)
+        # time_intervals = get_time_intervals(collect_action, monitor, date_to, 1, sample)
         # [2021-01-01    -  2021-03-01]
 
         # [2021-01-07    -  2021-01-07,
@@ -133,23 +133,23 @@ async def to_tasks_group(collect_actions: List[CollectAction], monitor: Monitor,
         # 2021-01-01    -  2021-03-01,
         # 2021-01-01    -  2021-03-01,
         # .. ]
-        print(f'{len(time_intervals)} time intervals created...', time_intervals)
+        # print(f'{len(time_intervals)} time intervals created...', time_intervals)
 
         # TODO create time intervals for actual data collection depending on posts count
-        for (date_from, date_to) in time_intervals:
-            if sample:
-                accounts, search_terms = remove_collected_samples(collect_action, accounts, search_terms, finalized_samplings_ids)
-                print(f'Using {len(accounts)} new account(s) for sampling')
-                print(f'Using {len(search_terms)} new search term(s) for sampling')
-            collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, env, sample, use_declensions)
-            print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
+        # for (date_from, date_to) in time_intervals:
+        #     if sample:
+        #         accounts, search_terms = remove_collected_samples(collect_action, accounts, search_terms, finalized_samplings_ids)
+        #         print(f'Using {len(accounts)} new account(s) for sampling')
+        #         print(f'Using {len(search_terms)} new search term(s) for sampling')
+        #     collect_tasks += split_to_tasks(accounts, search_terms, collect_action, date_from, date_to, env, sample, use_declensions)
+        #     print(f'{len(collect_tasks)} collect tasks for interval {date_from} {date_to} ')
         
                 
         # TODO move this into point when data collection is finalized
-        if not sample: 
-            ## Update last collection time 
-            collect_action.last_collection_date = time_intervals[-1][1]
-            await collect_action.save()
+        # if not sample: 
+        #     ## Update last collection time 
+        #     collect_action.last_collection_date = time_intervals[-1][1]
+        #     await collect_action.save()
 
     print(f'{len(collect_tasks)} collect tasks created...')
 
