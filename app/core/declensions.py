@@ -18,7 +18,7 @@ def get_declensions_ka(word):
             root + 'ივით',
             root + 'მა', 
             word + 'სავით', root + 'თან',  root + 'ზე',  root + 'ში',
-            root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', root_ + 'ისებრ', root_ + 'ისგამო', root_ + 'ისმიერ', 
+            root_ + "ს", root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', root_ + 'ისებრ', 
             root_ + 'ით'
         ]
         #plural
@@ -38,7 +38,7 @@ def get_declensions_ka(word):
             root + 'მ', 
             root + 'ს',
             root + 'სავით', root + 'სთან',  root + 'ზე',  root + 'ში',
-            root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', root_ + 'ისებრ', root_ + 'ისთანავე', root_ + 'ისგამო', root_ + 'ისმიერ', 
+            root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', root_ + 'ისებრ', root_ + 'ისთანავე',
             root_ + 'ით'
         ]
         #plural needs to be added
