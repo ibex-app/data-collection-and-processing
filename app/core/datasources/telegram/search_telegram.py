@@ -189,9 +189,12 @@ class TelegramCollector(Datasource):
 
             api_result = await self.client(search_method(**params))
             posts += api_result.messages
+            
+            self.log.info(f'[Telegram] search_method: {search_method}, params: {params}')
+            self.log.info(f'[Telegram] api_result {api_result}')
                 
             requests_count += 1
-            self.log.info(f'[Telegram] request # {requests_count} messages {len(api_result.messages)}')
+            self.log.info(f'[Telegram] request # {requests_count}, messages: {len(api_result.messages)}, total: {len(posts)} ')
 
             if not len(posts):
                 self.log.info(f'[Telegram] No posts found')
@@ -214,6 +217,7 @@ class TelegramCollector(Datasource):
 
             if next_rate in api_result.__dict__:
                 next_rate = api_result.next_rate
+
             time.sleep(1.5)
         await self.client.disconnect()
 
