@@ -59,7 +59,7 @@ async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: C
         collect_task_.status = CollectTaskStatus.finalized
     except Exception as e: 
         print(f'Failed to collect hits count:', e, collect_task )
-        log.error(f'Failed to collect hits count:')
+        log.error(f'Failed to collect hits count:', e)
         collect_task_.status = CollectTaskStatus.failed
         # collect_task_.hits_count = -2
 
@@ -94,7 +94,7 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
         collect_task_.status = CollectTaskStatus.finalized
         print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
     except Exception as e: 
-        log.error(f'Failed to collect posts:')
+        log.error(f'Failed to collect posts:', e)
         print(f'Failed to collect posts:',e , collect_task )
         collect_task_.status = CollectTaskStatus.failed
 

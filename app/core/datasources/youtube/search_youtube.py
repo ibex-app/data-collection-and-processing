@@ -53,7 +53,7 @@ class YoutubeCollector:
 
     async def collect(self, collect_task: CollectTask):
         params = self.generate_request_params(collect_task)
-        self.log.success(f'[YouTube-params] {params}')
+        # self.log.success(f'[YouTube-params] {params}')
         posts_from_api = self._collect(params)
         posts = self.map_to_posts(posts_from_api, collect_task)
         self.log.success(f'[YouTube] {len(posts)} posts collected')
@@ -67,9 +67,9 @@ class YoutubeCollector:
 
     async def get_hits_count(self, collect_task: CollectTask) -> int:
         params = self.generate_request_params(collect_task)
-        self.log.info(f'[YouTube] Hits search_terms: ', collect_task.search_terms)
-        self.log.info(f'[YouTube] Hits accounts: ', collect_task.accounts)
-        self.log.info(f'[YouTube] Hits params - {params}')
+        # self.log.info(f'[YouTube] Hits search_terms: ', collect_task.search_terms)
+        # self.log.info(f'[YouTube] Hits accounts: ', collect_task.accounts)
+        # self.log.info(f'[YouTube] Hits params - {params}')
         res = self._youtube_search(params).json()
         hits_count = res['pageInfo']['totalResults']
         self.log.info(f'[YouTube] Hits count - {hits_count}')

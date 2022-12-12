@@ -2,7 +2,7 @@ from typing import Any
 
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
-
+import traceback
 
 class Logger:
 
@@ -17,12 +17,12 @@ class Logger:
                 after which ANSI output should just work.
         """
         colorama_init()
-        self.max_len = 500
+        self.max_len = 1000
 
     @staticmethod
-    def info(message: Any, errors=None):
-        if errors is not None:
-            Logger.error(f"{message},{errors}")
+    def info(message: str, error=None):
+        if error:
+            Logger.error(message, error)
         else:
             print(message)
 
@@ -43,8 +43,10 @@ class Logger:
         print(f"{Fore.BLUE}{message}{Style.RESET_ALL}")
 
     @staticmethod
-    def error(message: str):
+    def error(message: str, error=None):
         print(f"{Fore.RED}{message}{Style.RESET_ALL}")
+        if error:
+            print(f"{Fore.RED}{traceback.format_exc()}{Style.RESET_ALL}")
 
 
 # export
