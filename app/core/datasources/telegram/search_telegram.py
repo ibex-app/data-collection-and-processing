@@ -13,6 +13,8 @@ from app.config.aop_config import slf, sleep_after
 from app.core.split import split_complex_query
 from eldar import Query
 from app.core.datasources.utils import add_search_terms_to_posts, set_account_id, set_total_engagement, validate_posts_by_query
+import pytz
+
 
 @slf
 class TelegramCollector(Datasource):
@@ -42,7 +44,7 @@ class TelegramCollector(Datasource):
             and_ = ' AND ',
             not_ = ' NOT ',
         )
-
+        self.utc = pytz.UTC
 
     async def get_first_and_last_message(self, channel, collect_task, query:str = None):
         if query:
@@ -199,7 +201,14 @@ class TelegramCollector(Datasource):
                 self.log.info(f'[Telegram] limit of {self.max_requests_} have been reached')
                 break
 
-            if not len(api_result.messages) or api_result.messages[-1].date <= collect_task.date_from:
+            if not len(api_result.messages):
+                self.log.info(f'[Telegram] All posts collected')
+                break
+            
+            last_message_date = api_result.messages[-1].date.datetime_start.replace(tzinfo=self.utc)
+            date_from = collect_task.date_from.replace(tzinfo=self.utc)
+            
+            if last_message_date <= date_from:
                 self.log.info(f'[Telegram] All posts collected')
                 break
 

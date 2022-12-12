@@ -24,7 +24,7 @@ def collect(collect_task: str):
     """
     collect_task: CollectTask = deserialize_from_base64(collect_task)
     if collect_task.platform not in collector_classes.keys():
-        log.info(f"No implementation for platform [{collect_task.platform}] found! skipping..")
+        log.info(f"[{collect_task.platform.capitalize()}] No implementation for platform [{collect_task.platform}] found! skipping..")
         return
 
     load_dotenv(f'/home/.{collect_task.env.lower()}.env')
@@ -43,7 +43,7 @@ async def set_task_status(collect_task: CollectTask, collect_task_status: Collec
     collect_task_ = await CollectTask.get(collect_task.id)
 
     if not collect_task_: 
-        raise KeyError(f'collect_task was not found for {collect_task.platform}, {collect_task.id}')
+        raise KeyError(f'[{collect_task.platform.capitalize()}] collect_task was not found for {collect_task.platform}, {collect_task.id}')
 
     collect_task_.status = collect_task_status
     await collect_task_.save()
@@ -58,8 +58,8 @@ async def collect_and_save_hits_count_in_mongo(collector_method, collect_task: C
         collect_task_.hits_count = hits_count
         collect_task_.status = CollectTaskStatus.finalized
     except Exception as e: 
-        print(f'Failed to collect hits count:', e, collect_task )
-        log.error(f'Failed to collect hits count:', e)
+        # print(f'Failed to collect hits count:', e, collect_task )
+        log.error(f'[{collect_task.platform.capitalize()}] Failed to collect hits count:', e)
         collect_task_.status = CollectTaskStatus.failed
         # collect_task_.hits_count = -2
 
@@ -92,10 +92,10 @@ async def collect_and_save_items_in_mongo(collector_method, collect_task: Collec
 
         count_inserts, count_updates, count_existed = await insert_posts(collected_posts, collect_task)
         collect_task_.status = CollectTaskStatus.finalized
-        print(f'total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
+        log.info(f'[{collect_task.platform.capitalize()}] total posts: {len(collected_posts)}, new posts: {count_inserts}, existed in db: {count_updates}, existed in monitor: {count_existed}')
     except Exception as e: 
-        log.error(f'Failed to collect posts:', e)
-        print(f'Failed to collect posts:',e , collect_task )
+        log.error(f'[{collect_task.platform.capitalize()}] Failed to collect posts:', e)
+        # print(f'Failed to collect posts:',e , collect_task )
         collect_task_.status = CollectTaskStatus.failed
 
     await collect_task_.save()
