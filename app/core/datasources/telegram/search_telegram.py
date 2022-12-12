@@ -190,8 +190,8 @@ class TelegramCollector(Datasource):
             api_result = await self.client(search_method(**params))
             posts += api_result.messages
 
-            self.log.info(f'[Telegram] search_method: {search_method}, params: {params}')
-            self.log.info(f'[Telegram] api_result {api_result}')
+            # self.log.info(f'[Telegram] search_method: {search_method}, params: {params}')
+            # self.log.info(f'[Telegram] api_result {api_result}')
                 
             requests_count += 1
             self.log.info(f'[Telegram] request # {requests_count}, messages: {len(api_result.messages)}, total: {len(posts)} ')
