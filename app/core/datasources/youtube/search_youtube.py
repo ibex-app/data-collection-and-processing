@@ -79,6 +79,7 @@ class YoutubeCollector:
 
     def _collect(self, params):
         ids = self.collect_ids(params)
+        self.log.info(f'[YouTube] {len(ids)} ids collected')
         collected_posts = self._get_video_details(ids)
         
         if len(collected_posts) == 0:
@@ -123,7 +124,10 @@ class YoutubeCollector:
             )
 
             res = self._youtube_details(params)
-            results += res.json()["items"]
+            try:
+                results += res.json()["items"]
+            except Exception as e: 
+                self.log.error(f'[Youtube]: no details for request {res.json()}', e)
             
         return results
 
