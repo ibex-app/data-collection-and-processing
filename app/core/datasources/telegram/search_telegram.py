@@ -189,7 +189,7 @@ class TelegramCollector(Datasource):
 
             api_result = await self.client(search_method(**params))
             posts += api_result.messages
-            
+
             self.log.info(f'[Telegram] search_method: {search_method}, params: {params}')
             self.log.info(f'[Telegram] api_result {api_result}')
                 
@@ -204,7 +204,7 @@ class TelegramCollector(Datasource):
                 self.log.info(f'[Telegram] limit of {self.max_requests_} have been reached')
                 break
 
-            if not len(api_result.messages):
+            if not len(api_result.messages) or len(api_result.messages) < self.max_posts_per_call_:
                 self.log.info(f'[Telegram] All posts collected')
                 break
             
