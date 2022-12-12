@@ -205,7 +205,7 @@ class TelegramCollector(Datasource):
                 self.log.info(f'[Telegram] All posts collected')
                 break
             
-            last_message_date = api_result.messages[-1].date.datetime_start.replace(tzinfo=self.utc)
+            last_message_date = api_result.messages[-1].date.replace(tzinfo=self.utc)
             date_from = collect_task.date_from.replace(tzinfo=self.utc)
             
             if last_message_date <= date_from:
