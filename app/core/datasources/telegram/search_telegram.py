@@ -132,7 +132,7 @@ class TelegramCollector(Datasource):
                 folder_id=None
             )
         
-        self.log.info('[Telegram] params ', params)
+        # self.log.info('[Telegram] params ', params)
         return params
 
 

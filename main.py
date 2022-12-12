@@ -16,6 +16,9 @@ from ibex_models.monitor import Monitor, MonitorStatus
 
 async def populate_collector_tasks(monitor_id:UUID, env:str, sample:bool, use_declensions:bool):
     await init_mongo()
+    monitor = await Monitor.get(monitor_id)
+    monitor.status = MonitorStatus.collecting
+    await monitor.save()
     collector_tasks: List[xmap or group] = await get_collector_tasks(monitor_id, env, sample, use_declensions)
     if not collector_tasks:
         return

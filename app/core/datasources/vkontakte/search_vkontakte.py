@@ -148,7 +148,7 @@ class VKCollector(Datasource):
         
         # parameter for generated metadata
         params = self.generate_req_params(collect_task)
-        self.log.info(f'[VKonakte] request posts - {params}')
+        # self.log.info(f'[VKonakte] request posts - {params}')
         # list of posts returned by method
         results: List[any] = self.get_posts_by_params(params)
 
