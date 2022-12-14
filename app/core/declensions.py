@@ -3,7 +3,7 @@ import re
 
 def get_declensions_ka(word):
     declensions = [word]
-    is_private = word not in ['ოსი', 'აფხაზი']
+    is_private = word in ['აბხაზეთი', 'ოსეთი'] #TODO add private words
     add_plural = ~is_private
     # consonant-ended root
     if word[-1] in ['ი']:
@@ -18,8 +18,8 @@ def get_declensions_ka(word):
             root + 'ივით',
             root + 'მა', 
             word + 'სავით', root + 'თან',  root + 'ზე',  root + 'ში',
-            root_ + "ს", root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', root_ + 'ისებრ', 
-            root_ + 'ით'
+            root_ + "ს", root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', #root_ + 'ისებრ', 
+            root_ + 'ით', root_ + 'ულად'
         ]
         #plural
         if not is_private:
@@ -27,7 +27,7 @@ def get_declensions_ka(word):
                 root + 'ებ' + 'ივით',
                 root + 'ებ' + 'მა', 
                 root_ + 'ები' + 'სავით', root + 'ებ' + 'თან',  root + 'ებ' + 'ზე',  root + 'ებ' + 'ში',
-                root_ + 'ებ' + 'ის', root_ + 'ებ' + 'ისთვის', root_ + 'ებ' + 'ისგან', root_ + 'ებ' + 'ისკენ', root_ + 'ებ' + 'ისებრ',  root_ + 'ებ' + 'ისგამო', root_ + 'ებ' + 'ისმიერ', 
+                root_ + 'ებ' + 'ის', root_ + 'ებ' + 'ისთვის', root_ + 'ებ' + 'ისგან', root_ + 'ებ' + 'ისკენ', #root_ + 'ებ' + 'ისებრ', 
                 root_ + 'ებ'+ 'ით'
             ]
     # vowel-ended root
@@ -38,8 +38,8 @@ def get_declensions_ka(word):
             root + 'მ', 
             root + 'ს',
             root + 'სავით', root + 'სთან',  root + 'ზე',  root + 'ში',
-            root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', root_ + 'ისებრ', root_ + 'ისთანავე',
-            root_ + 'ით'
+            root_ + 'ის', root_ + 'ისთვის', root_ + 'ისგან', root_ + 'ისკენ', #root_ + 'ისებრ', root_ + 'ისთანავე',
+            root_ + 'ით', root_ + 'ულად'
         ]
         #plural needs to be added
 
