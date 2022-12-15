@@ -75,7 +75,7 @@ class TwitterCollector:
 
     def __init__(self, *args, **kwargs):
         self.max_posts_per_call = 100 # 500 for premium/academic account?
-        self.max_requests = 20
+        self.max_requests = 50
 
         self.max_posts_per_call_sample = 50
         self.max_requests_sample = 1
