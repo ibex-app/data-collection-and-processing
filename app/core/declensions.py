@@ -6,6 +6,7 @@ def get_declensions_ka(word):
     is_private = word in ['აბხაზეთი', 'ოსეთი'] #TODO add private words
     add_plural = ~is_private
     # consonant-ended root
+    # TODO add წოდებითი
     if word[-1] in ['ი']:
         root = word[:-1]
         if not is_private and word[-2:-1] in ['ლ', 'მ', 'ნ', 'რ'] and word[-3:-2] in ['ა', 'ე', 'ო']: # 'გოდორი', 'კოკორი', 'მაწონი', 'ნიორი'...
