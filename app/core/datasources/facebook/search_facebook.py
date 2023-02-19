@@ -83,15 +83,17 @@ class FacebookCollector:
         while 'nextPage' in res["result"]["pagination"]:
             params["offset"] = self.max_posts_per_call_ * offset
             offset += 1
-            self.log.info(f'[Facebook] params {params}')
+            # self.log.info(f'[Facebook] params {params}')
             res = self._collect_posts_by_param(params)
-            self.log.info(f'[Facebook] res {res}')
+            # self.log.info(f'[Facebook] res {res}')
 
             if "result" not in res or "posts" not in res["result"]:
                 self.log.warn(f'[Facebook] result not present in api response, breaking loop..')
                 break
 
             results += res["result"]["posts"]
+
+            self.log.info(f'[Facebook] Collecting posts... {len(results)} posts collected')
 
             if offset >= self.max_requests_:
                 self.log.success(f'[Facebook] limit of {self.max_requests}')

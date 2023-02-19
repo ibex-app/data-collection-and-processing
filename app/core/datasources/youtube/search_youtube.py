@@ -102,6 +102,8 @@ class YoutubeCollector:
                         ids.append(i["id"]["videoId"])
                     except Exception as ex:
                         self.log.error(f'[YouTube] {i} {str(ex)}')
+            
+            self.log.info(f'[YouTube] Collectiong posts... {len(ids)} ids collected')
 
             if "nextPageToken" not in res_dict:
                 self.log.warn(f'[YouTube] nextPageToken not present in api response, breaking loop..')
