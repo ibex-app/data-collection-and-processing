@@ -23,7 +23,7 @@ class FacebookCollector:
 
         # TODO: double check the limit per post
         self.max_posts_per_call = 100
-        self.max_requests = 50
+        self.max_requests = 1000
 
         self.max_posts_per_call_sample = 50
         self.max_requests_sample = 1

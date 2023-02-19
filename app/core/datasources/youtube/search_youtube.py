@@ -18,8 +18,8 @@ class YoutubeCollector:
 
     def __init__(self, *args, **kwargs):
         self.token = os.getenv('YOUTUBE_TOKEN')
-        self.max_posts_per_call = 100 #TODO Exact max videos limit
-        self.max_requests = 50
+        self.max_posts_per_call = 50 #TODO Exact max videos limit
+        self.max_requests = 1000
 
         self.max_posts_per_call_sample = 50
         self.max_requests_sample = 1
@@ -124,7 +124,7 @@ class YoutubeCollector:
                 id=','.join(ids_chunk),
                 key=self.token,
             )
-            self.log.info(f'[YouTube] collecting details: {params}')
+            # self.log.info(f'[YouTube] collecting details: {params}')
             res = self._youtube_details(params)
             try:
                 results += res.json()["items"]
