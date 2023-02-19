@@ -118,7 +118,8 @@ class TwitterCollector:
         self.load_credentials(collect_task)
         self.max_requests_ = self.max_requests_sample if collect_task.sample else self.max_requests
         self.max_posts_per_call_ = self.max_posts_per_call_sample if collect_task.sample else self.max_posts_per_call
-
+        self.log.error(f'[Twitter] no API access')
+        return []
         params = gen_request_parameters(
             query = self.build_the_query(collect_task),
             granularity=False,
@@ -154,7 +155,8 @@ class TwitterCollector:
             start_time=collect_task.date_from.strftime("%Y-%m-%d %H:%M"),
             end_time=collect_task.date_to.strftime("%Y-%m-%d %H:%M")
         )
-
+        self.log.error(f'[Twitter] no API access')
+        return -2
         res = collect_results(params, result_stream_args=self.count_args)
 
         hits_count = 0
