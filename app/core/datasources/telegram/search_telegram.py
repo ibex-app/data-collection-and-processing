@@ -378,12 +378,13 @@ class TelegramCollector(Datasource):
         return result
 
 
-    def map_to_account(self, acc: Account) -> Account:
+    def map_to_account(self, api_account) -> Account:
         mapped_account = Account(
-            title=acc.title,
-            url='https://t.me/'+acc.username,
+            title=api_account.title,
+            url='https://t.me/'+api_account.username,
             platform=Platform.telegram,
-            platform_id=acc.id,
+            platform_id=api_account.id,
+            api_dump=api_account
         )
         return mapped_account
 

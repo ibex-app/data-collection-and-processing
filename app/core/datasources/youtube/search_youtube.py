@@ -234,15 +234,17 @@ class YoutubeCollector:
                 print("Youtube", e)
         return result
 
-    def map_to_acc(self, acc) -> Account:
+    def map_to_acc(self, api_account) -> Account:
         # self.log.info(acc['snippet'])
         
         mapped_account = Account(
-            title=acc['snippet']['title'],
-            img=acc['snippet']['thumbnails']['default']['url'],
-            url='https://youtube.com/channel/' + acc['id'],
+            title=api_account['snippet']['title'],
+            img=api_account['snippet']['thumbnails']['default']['url'],
+            url='https://youtube.com/channel/' + api_account['id'],
             platform=Platform.youtube,
-            platform_id=acc['id']
+            platform_id=api_account['id'],
+            api_dump=api_account
         )
+
         return mapped_account
     

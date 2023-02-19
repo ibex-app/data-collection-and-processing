@@ -126,6 +126,9 @@ class FacebookCollector:
             params['endDate'] = None
             # self.log.info('[Facebook] Hits count params', params)
             responce = self._collect_posts_by_param(params)
+            if 'result' not in responce:
+                return -2
+                break
             if not len(responce["result"]["posts"]):
                 posting_rates.append(0)
                 continue
@@ -134,8 +137,6 @@ class FacebookCollector:
             posting_rates.append(0 if not time_delta.seconds else len(responce["result"]["posts"])/time_delta.seconds)
             self.log.info(f'[Facebook] Hits count dates -  {time_delta} {len(responce["result"]["posts"])}')
             
-
-
         return ceil(mean(posting_rates) * (collect_task.date_to - collect_task.date_from).seconds)
         
 
@@ -230,7 +231,7 @@ class FacebookCollector:
         access_token = requests.get("https://graph.facebook.com/oauth/access_token", params=params).json()['access_token']
 
         params = dict(
-            fields='id,name,location,link',
+            fields='id,name,location,link,verification_status',
             access_token=access_token,
             q=query
         )
@@ -252,11 +253,12 @@ class FacebookCollector:
                 print('Facebook', e)
         return result
 
-    def map_to_acc(self, acc) -> Account:
+    def map_to_acc(self, api_account) -> Account:
         mapped_acc = Account(
-            title=acc['name'],
-            url=acc['link'],
+            title=api_account['name'],
+            url=api_account['link'],
             platform=Platform.facebook,
-            platform_id=acc['id'],
+            platform_id=api_account['id'],
+            api_dump=api_account
         )
         return mapped_acc

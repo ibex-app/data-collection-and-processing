@@ -336,13 +336,14 @@ class TwitterCollector:
                 print(e)
         return result
 
-    def map_to_acc(self, acc: any) -> Account:
+    def map_to_acc(self, api_account: any) -> Account:
         mapped_account = Account(
-            title=acc['screen_name'],
-            url='https://twitter.com/'+acc['screen_name'],
+            title=api_account['screen_name'],
+            url='https://twitter.com/'+api_account['screen_name'],
             platform=Platform.twitter,
-            platform_id=acc['id_str'],
-            img=acc['profile_image_url_https']
+            platform_id=api_account['id_str'],
+            img=api_account['profile_image_url_https'],
+            api_dump=api_account
         )
         return mapped_account
 

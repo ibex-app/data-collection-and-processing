@@ -301,20 +301,20 @@ class VKCollector(Datasource):
         return result
 
 
-    def map_to_acc(self, api_acc: any) -> Account:
+    def map_to_acc(self, api_account: any) -> Account:
         group_id = ''
         group_name = ''
         group_photo = ''
         group_url = ''
-        if  api_acc['type'] == 'group':
-            group_id = 0-api_acc['group']['id']
-            # group_id = api_acc['group']['screen_name']
-            group_photo = api_acc['group']['photo_100']
-            group_name = api_acc['group']['name']
-            group_url = api_acc['group']['screen_name']
-        if api_acc['type'] == 'profile':
-            group_id = api_acc['profile']['id']
-            group_photo = api_acc['profile']['first_name']
+        if  api_account['type'] == 'group':
+            group_id = 0-api_account['group']['id']
+            # group_id = api_account['group']['screen_name']
+            group_photo = api_account['group']['photo_100']
+            group_name = api_account['group']['name']
+            group_url = api_account['group']['screen_name']
+        if api_account['type'] == 'profile':
+            group_id = api_account['profile']['id']
+            group_photo = api_account['profile']['first_name']
             group_name = ''
             group_url = ''
         mapped_account = Account(
@@ -322,6 +322,7 @@ class VKCollector(Datasource):
             url='https://vk.com/' + group_url,
             platform=Platform.vkontakte,
             platform_id=group_id,
-            img=group_photo
+            img=group_photo,
+            api_dump=api_account
         )
         return mapped_account
