@@ -124,7 +124,7 @@ class YoutubeCollector:
                 id=','.join(ids_chunk),
                 key=self.token,
             )
-
+            self.log.info(f'[YouTube] collecting details: {params}')
             res = self._youtube_details(params)
             try:
                 results += res.json()["items"]
